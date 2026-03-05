@@ -778,7 +778,16 @@ tbody tr:hover{transform:translateX(3px)}
 // ═══════════════════════════════════════════════
 const SUPA_URL = 'https://mcqhwgspqvsviqwglxhe.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jcWh3Z3NwcXZzdmlxd2dseGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NzA2NDMsImV4cCI6MjA4ODI0NjY0M30.MuxfyERAv-G-wBE8GYz1GLUTyRrS725E650-aKJhus8';
-const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+let db = null;
+try {
+  if (window.supabase) {
+    db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  } else {
+    console.warn('Supabase não carregado — operando em modo offline.');
+  }
+} catch(e) {
+  console.error('Erro ao inicializar Supabase:', e);
+}
 
 // ═══════════════════════════════════════════════
 // STATE
@@ -793,6 +802,7 @@ const S = {
 // LOAD DATA
 // ═══════════════════════════════════════════════
 async function loadData(){
+  if (!db) { console.warn('Sem conexão com banco de dados.'); return; }
   const [cats, items, movs, users] = await Promise.all([
     db.from('categories').select('*').order('name'),
     db.from('items').select('*').eq('is_active',true).order('name'),
@@ -819,7 +829,8 @@ const fmtDt = s => new Date(s).toLocaleString('pt-BR',{day:'2-digit',month:'2-di
 const iSt  = i => i.stock===0?'critico':i.stock<=i.min?'baixo':i.stock>=i.max?'alto':'normal';
 const iPct = i => i.ideal ? Math.min(200,Math.round(i.stock/i.ideal*100)) : 0;
 const iCol = i => ({critico:'var(--red)',baixo:'var(--amber)',normal:'var(--green)',alto:'var(--purple)'}[iSt(i)]);
-const badge = s => `<span class="badge b-${s}">${{critico:'⛔ Crítico',baixo:'⚠ Baixo',normal:'✓ Normal',alto:'↑ Excesso'}[s]}</span>`;
+const _badgeLabels = {critico:'⛔ Crítico',baixo:'⚠ Baixo',normal:'✓ Normal',alto:'↑ Excesso'};
+const badge = s => `<span class="badge b-${s}">${_badgeLabels[s]}</span>`;
 const catVal = cat => S.items.filter(i=>i.cat===cat.id&&i.active).reduce((s,i)=>s+i.stock*i.price,0);
 
 function togglePw(fId,btn){
@@ -869,6 +880,12 @@ async function doLogin(){
   btn.innerHTML='<span class="spinner"></span> Verificando...';
 
   try {
+    if (!db) {
+      err.textContent = 'Sem conexão com o servidor. Verifique sua internet.';
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Entrar no Sistema';
+      return;
+    }
     // Busca usuário pelo login e senha direto na tabela users
     const {data, error} = await db
       .from('users')
@@ -1469,11 +1486,17 @@ setInterval(()=>{if(S.user) recalcAlerts()},30000);
 // ═══════════════════════════════════════════════
 
 // ── Loader inicial ──
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    document.getElementById('appLoader').classList.add('hide');
-  }, 900);
-});
+// Garante que o loader SEMPRE some, mesmo se scripts externos falharem
+function _hideLoader(){
+  const el = document.getElementById('appLoader');
+  if(el) el.classList.add('hide');
+}
+// Tenta via window.load normalmente
+window.addEventListener('load', () => setTimeout(_hideLoader, 900));
+// Fallback 1: DOMContentLoaded + 1.5s (caso scripts externos travem o load)
+document.addEventListener('DOMContentLoaded', () => setTimeout(_hideLoader, 1500));
+// Fallback 2: timeout absoluto de 3s — garante que nunca fique preso
+setTimeout(_hideLoader, 3000);
 
 // ── Partículas no painel de login ──
 function initParticles() {
@@ -1812,6 +1835,25 @@ async function renderGoals(){
 
     const noGoal = !goal || (goalQty===0 && goalValue===0);
 
+    const _editBtn = canEdit ? '<button class="btn btn-xs btn-out" onclick="openGoalModal(\'' + cat.id + '\',' + year + ',' + month + ')">✎ ' + (noGoal ? 'Definir' : 'Editar') + '</button>' : '';
+    const _goalBody = noGoal
+      ? '<div style="font-size:12px;color:var(--gray4);padding:8px 0;text-align:center">Nenhuma meta definida para este mês.<br><span style="font-size:11px">Saídas realizadas: <strong>' + actualQty + '</strong> un · ' + R(actualValue) + '</span></div>'
+      : '<div style="margin-bottom:10px">'
+        + '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">'
+        + '<span style="color:var(--gray5)">Quantidade saída</span>'
+        + '<span style="font-weight:700;color:' + colQty + '">' + actualQty + ' / ' + goalQty + ' un ' + (pctQty!==null ? '(' + pctQty + '%)' : '') + '</span>'
+        + '</div>'
+        + '<div style="height:7px;background:var(--gray2);border-radius:4px;overflow:hidden">'
+        + '<div style="height:100%;width:' + Math.min(100,pctQty||0) + '%;background:' + colQty + ';border-radius:4px;transition:width .6s ease"></div>'
+        + '</div></div>'
+        + '<div>'
+        + '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">'
+        + '<span style="color:var(--gray5)">Valor gasto</span>'
+        + '<span style="font-weight:700;color:' + colVal + '">' + R(actualValue) + ' / ' + R(goalValue) + ' ' + (pctValue!==null ? '(' + pctValue + '%)' : '') + '</span>'
+        + '</div>'
+        + '<div style="height:7px;background:var(--gray2);border-radius:4px;overflow:hidden">'
+        + '<div style="height:100%;width:' + Math.min(100,pctValue||0) + '%;background:' + colVal + ';border-radius:4px;transition:width .6s ease"></div>'
+        + '</div></div>';
     return `<div style="background:#fff;border:var(--brd);border-radius:var(--r);box-shadow:var(--sh1);overflow:hidden">
       <div style="height:4px;background:${cat.color}"></div>
       <div style="padding:16px 18px">
@@ -1823,27 +1865,9 @@ async function renderGoals(){
               <div style="font-size:10px;color:var(--gray4)">${meses[month-1]} ${year}</div>
             </div>
           </div>
-          ${canEdit?`<button class="btn btn-xs btn-out" onclick="openGoalModal('${cat.id}',${year},${month})">✎ ${noGoal?'Definir':'Editar'}</button>`:''}
+          ${_editBtn}
         </div>
-        ${noGoal?`<div style="font-size:12px;color:var(--gray4);padding:8px 0;text-align:center">Nenhuma meta definida para este mês.<br><span style="font-size:11px">Saídas realizadas: <strong>${actualQty}</strong> un · ${R(actualValue)}</span></div>`:`
-        <div style="margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
-            <span style="color:var(--gray5)">Quantidade saída</span>
-            <span style="font-weight:700;color:${colQty}">${actualQty} / ${goalQty} un ${pctQty!==null?'('+pctQty+'%)':''}</span>
-          </div>
-          <div style="height:7px;background:var(--gray2);border-radius:4px;overflow:hidden">
-            <div style="height:100%;width:${Math.min(100,pctQty||0)}%;background:${colQty};border-radius:4px;transition:width .6s ease"></div>
-          </div>
-        </div>
-        <div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
-            <span style="color:var(--gray5)">Valor gasto</span>
-            <span style="font-weight:700;color:${colVal}">${R(actualValue)} / ${R(goalValue)} ${pctValue!==null?'('+pctValue+'%)':''}</span>
-          </div>
-          <div style="height:7px;background:var(--gray2);border-radius:4px;overflow:hidden">
-            <div style="height:100%;width:${Math.min(100,pctValue||0)}%;background:${colVal};border-radius:4px;transition:width .6s ease"></div>
-          </div>
-        </div>`}
+        ${_goalBody}
       </div>
     </div>`;
   }).join('');
@@ -1856,6 +1880,8 @@ async function renderGoals(){
   const pctTotalVal   = totalGoalVal>0?Math.round(totalActualVal/totalGoalVal*100):0;
   const colTotal      = pctTotalVal>=100?'var(--red)':pctTotalVal>=75?'var(--amber)':'var(--green)';
 
+  const _saldoColor = totalGoalVal-totalActualVal>=0 ? 'var(--green)' : 'var(--red)';
+  const _saldoLabel = totalGoalVal-totalActualVal>=0 ? 'Dentro do orçamento' : 'Acima do orçamento';
   const summaryHtml = goals.length ? `
     <div style="background:#fff;border:var(--brd);border-radius:var(--r);box-shadow:var(--sh1);padding:18px 22px;margin-bottom:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px">
       <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--gray4);font-weight:700;margin-bottom:4px">Total Gasto vs Meta</div>
@@ -1867,8 +1893,8 @@ async function renderGoals(){
         <div style="font-size:11px;color:var(--gray5)">Meta: ${totalGoalQty} un</div>
       </div>
       <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--gray4);font-weight:700;margin-bottom:4px">Saldo Orçamento</div>
-        <div style="font-size:22px;font-weight:800;color:${totalGoalVal-totalActualVal>=0?'var(--green)':'var(--red)'">${R(totalGoalVal-totalActualVal)}</div>
-        <div style="font-size:11px;color:var(--gray5)">${totalGoalVal-totalActualVal>=0?'Dentro do orçamento':'Acima do orçamento'}</div>
+        <div style="font-size:22px;font-weight:800;color:${_saldoColor}">${R(totalGoalVal-totalActualVal)}</div>
+        <div style="font-size:11px;color:var(--gray5)">${_saldoLabel}</div>
       </div>
     </div>` : '';
 
