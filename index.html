@@ -601,11 +601,11 @@ canvas{max-height:210px!important}
             <button class="period-tab" onclick="setPeriod('livre',this)">Intervalo Livre</button>
           </div>
           <div class="period-inputs" id="periodInputs">
-            <div id="piDia" class="period-input-group">
+            <div id="piDia" class="period-input-group" style="display:flex;gap:8px;align-items:flex-end">
               <label style="font-size:10px;font-weight:700;color:var(--gray7);text-transform:uppercase;letter-spacing:.6px">Data</label>
               <input type="date" id="pdDia" onchange="updatePeriodPreview()" style="background:#fff;border:1.5px solid var(--gray2);border-radius:var(--r2);padding:6px 10px;font-size:12px;font-family:inherit;color:var(--black);outline:none">
             </div>
-            <div id="piSemana" style="display:none;display:flex;gap:8px;align-items:flex-end">
+            <div id="piSemana" style="display:none;gap:8px;align-items:flex-end">
               <div><label style="font-size:10px;font-weight:700;color:var(--gray7);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px">Semana de</label>
               <input type="date" id="pdSem" onchange="updatePeriodPreview()" style="background:#fff;border:1.5px solid var(--gray2);border-radius:var(--r2);padding:6px 10px;font-size:12px;font-family:inherit;color:var(--black);outline:none"></div>
             </div>
@@ -1292,7 +1292,8 @@ function setPeriod(p,el){
   document.querySelectorAll('.period-tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');
   ['piDia','piSemana','piMes','piAno','piLivre'].forEach(id=>document.getElementById(id).style.display='none');
   const map={dia:'piDia',semana:'piSemana',mes:'piMes',ano:'piAno',livre:'piLivre'};
-  document.getElementById(map[p]).style.display='flex';
+  const dispMap={dia:'flex',semana:'flex',mes:'block',ano:'block',livre:'block'};
+  document.getElementById(map[p]).style.display=dispMap[p]||'block';
   updatePeriodPreview();
 }
 function getPeriodRange(){
