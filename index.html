@@ -483,6 +483,7 @@ tbody tr:hover{transform:translateX(3px)}
     <div class="ni" onclick="go('categories',this)"><span class="ni-icon">◈</span>Categorias</div>
     <div class="ni" onclick="go('alerts',this)"><span class="ni-icon">△</span>Alertas<span class="ni-badge" id="abadge" style="display:none">0</span></div>
     <div class="ni" onclick="go('reports',this)"><span class="ni-icon">↗</span>Relatórios</div>
+    <div class="ni" onclick="go('goals',this)"><span class="ni-icon">🎯</span>Metas Mensais</div>
     <div class="ni" onclick="go('logs',this)"><span class="ni-icon">⋮</span>Auditoria</div>
     <div class="sb-sec" id="admSec" style="display:none">Administração</div>
     <div class="ni" id="niUsers" onclick="go('users',this)" style="display:none"><span class="ni-icon">○</span>Usuários</div>
@@ -606,6 +607,22 @@ tbody tr:hover{transform:translateX(3px)}
       </div>
       <div class="card"><div id="usersList"></div></div>
     </div>
+  <!-- METAS MENSAIS -->
+    <div class="page" id="page-goals">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div>
+          <select id="goalsYear" onchange="renderGoals()" style="background:#fff;border:1.5px solid var(--gray2);border-radius:var(--r2);padding:6px 11px;font-size:12px;font-family:inherit;color:var(--black);outline:none"></select>
+          <select id="goalsMonth" onchange="renderGoals()" style="background:#fff;border:1.5px solid var(--gray2);border-radius:var(--r2);padding:6px 11px;font-size:12px;font-family:inherit;color:var(--black);outline:none;margin-left:6px">
+            <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+            <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+            <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+            <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+          </select>
+        </div>
+        <button class="btn btn-sm btn-pri" id="btnAddGoal" onclick="openGoalModal()" style="display:none">＋ Definir Meta</button>
+      </div>
+      <div id="goalsContent"></div>
+    </div>
   </main>
 </div>
 
@@ -616,6 +633,38 @@ tbody tr:hover{transform:translateX(3px)}
 </div>
 
 <!-- MODALS -->
+<!-- Histórico do Item -->
+<div class="ov" id="mHist">
+  <div class="modal" style="max-width:800px">
+    <div class="m-hd"><div class="m-title" id="mHistTitle">Histórico do Item</div><button class="m-x" onclick="closeM('mHist')">×</button></div>
+    <div class="m-body" id="mHistBody"></div>
+    <div class="m-foot"><button class="btn btn-ghost" onclick="closeM('mHist')">Fechar</button></div>
+  </div>
+</div>
+<!-- Meta -->
+<div class="ov" id="mGoal">
+  <div class="modal" style="max-width:420px">
+    <div class="m-hd"><div class="m-title" id="mGoalT">Definir Meta</div><button class="m-x" onclick="closeM('mGoal')">×</button></div>
+    <div class="m-body">
+      <input type="hidden" id="gGoalId">
+      <div class="fg"><label>Categoria</label><select id="gCat"></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fg"><label>Ano</label><input type="number" id="gYear" min="2020" max="2099"></div>
+        <div class="fg"><label>Mês</label><select id="gMonth">
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+          <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+          <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fg"><label>Meta Quantidade</label><input type="number" id="gQty" min="0" placeholder="0"></div>
+        <div class="fg"><label>Meta Valor (R$)</label><input type="number" id="gVal" min="0" step="0.01" placeholder="0,00"></div>
+      </div>
+    </div>
+    <div class="m-foot"><button class="btn btn-ghost" onclick="closeM('mGoal')">Cancelar</button><button class="btn btn-pri" onclick="saveGoal()">Salvar Meta</button></div>
+  </div>
+</div>
 <!-- Item -->
 <div class="ov" id="mItem">
   <div class="modal">
@@ -736,7 +785,7 @@ const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 // ═══════════════════════════════════════════════
 const S = {
   user: null,
-  cats:[], items:[], movs:[], logs:[], users:[], alerts:[], charts:{},
+  cats:[], items:[], movs:[], logs:[], users:[], alerts:[], charts:{}, goals:[],
   invF:'all', movF:'all', logF:'all', q:'', collapsed:{}
 };
 
@@ -749,11 +798,14 @@ async function loadData(){
     db.from('items').select('*').eq('is_active',true).order('name'),
     db.from('v_recent_movements').select('*').order('created_at',{ascending:false}).limit(200),
     db.from('users').select('id,login,full_name,role,department,is_active').order('full_name'),
+    db.from('stock_goals').select('*'),
   ]);
   if(cats.data)  S.cats  = cats.data.map(c=>({id:c.id,name:c.name,desc:c.description||'',color:c.color||'#C8102E',icon:c.icon||'📦'}));
-  if(items.data) S.items = items.data.map(i=>({id:i.id,name:i.name,cat:i.category_id,unit:i.unit||'un',price:parseFloat(i.unit_price)||0,stock:parseInt(i.current_stock)||0,min:parseInt(i.min_stock)||0,max:parseInt(i.max_stock)||100,ideal:parseInt(i.ideal_stock)||50,loc:i.location||'',sup:i.supplier||'',notes:i.notes||'',bc:i.barcode||'',active:true}));
+  if(items.data) S.items = items.data.map(i=>({id:i.id,name:i.name,cat:i.category_id,unit:i.unit||'un',price:parseFloat(i.unit_price)||0,stock:parseInt(i.current_stock)||0,min:parseInt(i.min_stock)||0,max:parseInt(i.max_stock)||100,ideal:parseInt(i.ideal_stock)||50,loc:i.location||'',sup:i.supplier||'',notes:i.notes||'',bc:i.barcode||'',active:true,lastUpd:i.last_updated_at||null}));
   if(movs.data)  S.movs  = movs.data.map(m=>({id:m.id,iid:m.item_id,nm:m.item_name||'',cat:m.category_name||'',catIcon:m.category_icon||'',user:m.user_name||'',type:m.movement_type,qty:m.quantity,before:m.quantity_before,after:m.quantity_after,price:parseFloat(m.unit_price)||0,total:parseFloat(m.total_value)||0,reason:m.reason||'',nf:m.invoice_number||'',ts:m.created_at}));
   if(users.data) S.users = users.data;
+  const goalsRes = await db.from('stock_goals').select('*');
+  if(goalsRes.data) S.goals = goalsRes.data;
 }
 
 // ═══════════════════════════════════════════════
@@ -889,7 +941,7 @@ const META = {
   dashboard:['Dashboard','Visão geral'], inventory:['Inventário','Itens por categoria'],
   movements:['Movimentações','Entradas e saídas'], categories:['Categorias','Gerenciar categorias'],
   alerts:['Alertas','Central de notificações'], reports:['Relatórios','Análise e PDF'],
-  logs:['Auditoria','Histórico de ações'], users:['Usuários','Gerenciar acessos']
+  logs:['Auditoria','Histórico de ações'], users:['Usuários','Gerenciar acessos'], goals:['Metas Mensais','Gasto vs esperado por categoria']
 };
 function go(page,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
@@ -907,6 +959,7 @@ function go(page,el){
   if(page==='reports')    renderReports();
   if(page==='logs')       renderLogs();
   if(page==='users')      renderUsers();
+  if(page==='goals')      renderGoals();
 }
 function goInventory(){go('inventory',document.querySelector('.ni[onclick*="inventory"]'))}
 
@@ -1001,7 +1054,7 @@ function renderInventory(){
       <div class="cat-body ${isCol?'collapsed':''}" id="body-${cat.id}">
         ${catItems.length===0?`<div class="cat-empty"><div class="cat-empty-icon">${cat.icon}</div><p>Nenhum item${S.invF!=='all'||S.q?' com este filtro':' nesta categoria'}</p></div>`:`
         <div class="tbl-wrap"><table>
-          <thead><tr><th>Item</th><th>Unid.</th><th>Qtd</th><th>Preço Unit.</th><th>Valor Total</th><th>Nível</th><th>Status</th><th>Local</th><th></th></tr></thead>
+          <thead><tr><th>Item</th><th>Unid.</th><th>Qtd</th><th>Preço Unit.</th><th>Valor Total</th><th>Nível</th><th>Status</th><th>Local</th><th>Última Atualização</th><th></th></tr></thead>
           <tbody>${catItems.map(i=>{const p=iPct(i);const col=iCol(i);return`<tr>
             <td><div class="t-name">${i.name}</div><div class="t-sub">${i.sup?'Forn: '+i.sup:''}</div></td>
             <td style="color:var(--gray5)">${i.unit}</td>
@@ -1011,12 +1064,14 @@ function renderInventory(){
             <td style="min-width:110px"><div class="sb-row"><div class="sb-track"><div class="sb-fill" style="width:${Math.min(100,p)}%;background:${col}"></div></div><span class="sb-pct" style="color:${col}">${p}%</span></div></td>
             <td>${badge(iSt(i))}</td>
             <td style="font-size:11px;color:var(--gray4)">${i.loc||'—'}</td>
+            <td style="font-size:11px;white-space:nowrap">${i.lastUpd?fmtUpd(i.lastUpd):'<span style="color:var(--gray3)">—</span>'}</td>
             <td><div class="row-acts">${canEdit?`
               <button class="btn btn-xs btn-green" title="Entrada" onclick="openMovModal('${i.id}','entrada')">↑</button>
               <button class="btn btn-xs btn-amber" title="Saída" onclick="openMovModal('${i.id}','saida')">↓</button>
               <button class="btn btn-xs btn-blue" title="Editar" onclick="openItemModal('${i.id}')">✎</button>
               <button class="btn btn-xs btn-danger" title="Excluir" onclick="confirmDel('${i.id}','item')">✕</button>
             `:''}
+            <button class="btn btn-xs btn-ghost" title="Histórico do item" onclick="openItemHistory('${i.id}')">📋</button>
             </div></td>
           </tr>`;}).join('')}</tbody>
         </table></div>`}
@@ -1611,6 +1666,352 @@ renderMovements = function() {
 };
 
 
+
+// ═══════════════════════════════════════════════
+// HELPER: formatar data de última atualização
+// ═══════════════════════════════════════════════
+function fmtUpd(ts){
+  if(!ts) return '—';
+  const d = new Date(ts);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffDays = Math.floor(diffMs / 86400000);
+  const diffHrs  = Math.floor(diffMs / 3600000);
+  const diffMins = Math.floor(diffMs / 60000);
+  let txt, color;
+  if(diffMins < 60)       { txt=diffMins<=1?'Agora mesmo':`${diffMins}min atrás`; color='var(--green)'; }
+  else if(diffHrs < 24)   { txt=`${diffHrs}h atrás`; color='var(--green)'; }
+  else if(diffDays === 1) { txt='Ontem'; color='var(--amber)'; }
+  else if(diffDays < 7)   { txt=`${diffDays} dias atrás`; color='var(--amber)'; }
+  else if(diffDays < 14)  { txt=`${diffDays} dias atrás`; color='var(--red)'; }
+  else                    { txt=d.toLocaleDateString('pt-BR'); color='var(--red)'; }
+  return `<span style="color:${color};font-weight:600">${txt}</span><br><span style="color:var(--gray4);font-size:10px">${d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`;
+}
+
+// ═══════════════════════════════════════════════
+// HISTÓRICO POR ITEM (busca v_item_history)
+// ═══════════════════════════════════════════════
+async function openItemHistory(iid){
+  const item = S.items.find(x=>x.id===iid);
+  if(!item) return;
+
+  // Busca do banco via view v_item_history
+  const {data, error} = await db.from('v_item_history').select('*').eq('item_id',iid).order('created_at',{ascending:false}).limit(100);
+
+  const movs = data || S.movs.filter(m=>m.iid===iid); // fallback para dados em memória
+  const cat = getCat(item.cat);
+  const ti={entrada:'📥',saida:'📤',ajuste:'⚖',perda:'✕'};
+  const tc={entrada:'var(--green)',saida:'var(--red)',ajuste:'var(--amber)',perda:'var(--purple)'};
+
+  // Calcula totais do histórico
+  const totalEntradas = movs.filter(m=>(m.movement_type||m.type)==='entrada').reduce((s,m)=>s+(m.quantity||m.qty||0),0);
+  const totalSaidas   = movs.filter(m=>(m.movement_type||m.type)==='saida').reduce((s,m)=>s+(m.quantity||m.qty||0),0);
+  const totalGasto    = movs.filter(m=>(m.movement_type||m.type)==='saida').reduce((s,m)=>s+(parseFloat(m.total_value||m.total)||0),0);
+
+  const summaryHtml = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">
+      <div style="background:var(--green-bg);border:1px solid var(--green-b);border-radius:var(--r);padding:14px;text-align:center">
+        <div style="font-size:22px;font-weight:800;color:var(--green)">${totalEntradas}</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--green);font-weight:700;margin-top:3px">Total entradas (${item.unit})</div>
+      </div>
+      <div style="background:var(--red-bg);border:1px solid var(--red-border);border-radius:var(--r);padding:14px;text-align:center">
+        <div style="font-size:22px;font-weight:800;color:var(--red)">${totalSaidas}</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--red);font-weight:700;margin-top:3px">Total saídas (${item.unit})</div>
+      </div>
+      <div style="background:var(--blue-bg);border:1px solid var(--blue-b);border-radius:var(--r);padding:14px;text-align:center">
+        <div style="font-size:18px;font-weight:800;color:var(--blue)">${R(totalGasto)}</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--blue);font-weight:700;margin-top:3px">Total gasto (saídas)</div>
+      </div>
+    </div>`;
+
+  const rowsHtml = movs.length ? movs.map(m=>{
+    const type = m.movement_type||m.type;
+    const qty  = m.quantity||m.qty;
+    const tot  = parseFloat(m.total_value||m.total)||0;
+    const usr  = m.user_name||m.user||'—';
+    const ts   = m.created_at||m.ts;
+    return `<tr>
+      <td><span style="font-weight:700;color:${tc[type]||'var(--gray5)'}">${ti[type]||''} ${type.toUpperCase()}</span></td>
+      <td><strong>${qty}</strong> <span style="color:var(--gray4);font-size:11px">${item.unit}</span></td>
+      <td style="font-size:11px">${m.quantity_before!==undefined?m.quantity_before:(m.before||'—')} → <strong style="color:${tc[type]}">${m.quantity_after!==undefined?m.quantity_after:(m.after||'—')}</strong></td>
+      <td style="font-weight:600;color:var(--green)">${tot>0?R(tot):'—'}</td>
+      <td style="font-size:11px;color:var(--gray5)">${m.reason||'—'}</td>
+      <td><span style="font-size:10px;background:var(--gray1);padding:2px 7px;border-radius:10px;color:var(--gray7)">${usr}</span></td>
+      <td style="font-size:10px;color:var(--gray4);white-space:nowrap">${ts?fmtDt(ts):'—'}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--gray4)">Nenhuma movimentação registrada para este item.</td></tr>`;
+
+  const html = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 14px;background:var(--gray1);border-radius:var(--r);border:var(--brd)">
+      <span style="font-size:24px">${cat.icon}</span>
+      <div>
+        <div style="font-weight:700;font-size:15px">${item.name}</div>
+        <div style="font-size:11px;color:var(--gray5)">${cat.name} · Estoque atual: <strong>${item.stock} ${item.unit}</strong> · ${item.lastUpd?'Última atualização: '+new Date(item.lastUpd).toLocaleString('pt-BR'):'Nunca atualizado'}</div>
+      </div>
+    </div>
+    ${summaryHtml}
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Tipo</th><th>Qtd</th><th>Antes→Depois</th><th>Valor</th><th>Motivo</th><th>Usuário</th><th>Data</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table></div>`;
+
+  // Abre modal reutilizável
+  document.getElementById('mHistTitle').textContent = '📋 Histórico — '+item.name;
+  document.getElementById('mHistBody').innerHTML = html;
+  openM('mHist');
+}
+
+// ═══════════════════════════════════════════════
+// METAS MENSAIS
+// ═══════════════════════════════════════════════
+function initGoalsSelects(){
+  const yearSel = document.getElementById('goalsYear');
+  if(!yearSel.options.length){
+    const now = new Date();
+    for(let y=now.getFullYear()-1;y<=now.getFullYear()+1;y++){
+      const o=document.createElement('option');
+      o.value=y; o.textContent=y;
+      if(y===now.getFullYear()) o.selected=true;
+      yearSel.appendChild(o);
+    }
+    document.getElementById('goalsMonth').value = now.getMonth()+1;
+  }
+}
+
+async function renderGoals(){
+  initGoalsSelects();
+  const year  = parseInt(document.getElementById('goalsYear').value);
+  const month = parseInt(document.getElementById('goalsMonth').value);
+  const canEdit = S.user?.role!=='viewer';
+  if(canEdit) document.getElementById('btnAddGoal').style.display='inline-flex';
+
+  // Busca metas do banco para o mês/ano selecionado
+  const {data: goalsData} = await db.from('v_goal_vs_actual').select('*').eq('year',year).eq('month',month);
+  const goals = goalsData || [];
+
+  // Meses em PT
+  const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  const el = document.getElementById('goalsContent');
+
+  if(!S.cats.length){ el.innerHTML='<div class="empty"><p>Nenhuma categoria cadastrada.</p></div>'; return; }
+
+  // Cards por categoria
+  const cardsHtml = S.cats.map(cat=>{
+    const goal = goals.find(g=>g.category_id===cat.id);
+    const actualQty   = goal ? parseFloat(goal.actual_qty)||0   : calcActualQty(cat.id, year, month);
+    const actualValue = goal ? parseFloat(goal.actual_value)||0 : calcActualVal(cat.id, year, month);
+    const goalQty     = goal ? parseFloat(goal.goal_qty)||0   : 0;
+    const goalValue   = goal ? parseFloat(goal.goal_value)||0 : 0;
+
+    const pctQty   = goalQty   > 0 ? Math.min(200, Math.round(actualQty/goalQty*100))     : null;
+    const pctValue = goalValue > 0 ? Math.min(200, Math.round(actualValue/goalValue*100)) : null;
+
+    const colQty   = pctQty===null?'var(--gray3)':pctQty>=100?'var(--red)':pctQty>=75?'var(--amber)':'var(--green)';
+    const colVal   = pctValue===null?'var(--gray3)':pctValue>=100?'var(--red)':pctValue>=75?'var(--amber)':'var(--green)';
+
+    const noGoal = !goal || (goalQty===0 && goalValue===0);
+
+    return `<div style="background:#fff;border:var(--brd);border-radius:var(--r);box-shadow:var(--sh1);overflow:hidden">
+      <div style="height:4px;background:${cat.color}"></div>
+      <div style="padding:16px 18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:22px">${cat.icon}</span>
+            <div>
+              <div style="font-weight:700;font-size:14px">${cat.name}</div>
+              <div style="font-size:10px;color:var(--gray4)">${meses[month-1]} ${year}</div>
+            </div>
+          </div>
+          ${canEdit?`<button class="btn btn-xs btn-out" onclick="openGoalModal('${cat.id}',${year},${month})">✎ ${noGoal?'Definir':'Editar'}</button>`:''}
+        </div>
+        ${noGoal?`<div style="font-size:12px;color:var(--gray4);padding:8px 0;text-align:center">Nenhuma meta definida para este mês.<br><span style="font-size:11px">Saídas realizadas: <strong>${actualQty}</strong> un · ${R(actualValue)}</span></div>`:`
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+            <span style="color:var(--gray5)">Quantidade saída</span>
+            <span style="font-weight:700;color:${colQty}">${actualQty} / ${goalQty} un ${pctQty!==null?'('+pctQty+'%)':''}</span>
+          </div>
+          <div style="height:7px;background:var(--gray2);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${Math.min(100,pctQty||0)}%;background:${colQty};border-radius:4px;transition:width .6s ease"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+            <span style="color:var(--gray5)">Valor gasto</span>
+            <span style="font-weight:700;color:${colVal}">${R(actualValue)} / ${R(goalValue)} ${pctValue!==null?'('+pctValue+'%)':''}</span>
+          </div>
+          <div style="height:7px;background:var(--gray2);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${Math.min(100,pctValue||0)}%;background:${colVal};border-radius:4px;transition:width .6s ease"></div>
+          </div>
+        </div>`}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Totais gerais
+  const totalGoalVal  = goals.reduce((s,g)=>s+parseFloat(g.goal_value||0),0);
+  const totalActualVal= goals.reduce((s,g)=>s+parseFloat(g.actual_value||0),0);
+  const totalGoalQty  = goals.reduce((s,g)=>s+parseFloat(g.goal_qty||0),0);
+  const totalActualQty= goals.reduce((s,g)=>s+parseFloat(g.actual_qty||0),0);
+  const pctTotalVal   = totalGoalVal>0?Math.round(totalActualVal/totalGoalVal*100):0;
+  const colTotal      = pctTotalVal>=100?'var(--red)':pctTotalVal>=75?'var(--amber)':'var(--green)';
+
+  const summaryHtml = goals.length ? `
+    <div style="background:#fff;border:var(--brd);border-radius:var(--r);box-shadow:var(--sh1);padding:18px 22px;margin-bottom:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px">
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--gray4);font-weight:700;margin-bottom:4px">Total Gasto vs Meta</div>
+        <div style="font-size:22px;font-weight:800;color:${colTotal}">${R(totalActualVal)}</div>
+        <div style="font-size:11px;color:var(--gray5)">Meta: ${R(totalGoalVal)} · <strong style="color:${colTotal}">${pctTotalVal}%</strong></div>
+      </div>
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--gray4);font-weight:700;margin-bottom:4px">Qtd Saída vs Meta</div>
+        <div style="font-size:22px;font-weight:800">${totalActualQty}</div>
+        <div style="font-size:11px;color:var(--gray5)">Meta: ${totalGoalQty} un</div>
+      </div>
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--gray4);font-weight:700;margin-bottom:4px">Saldo Orçamento</div>
+        <div style="font-size:22px;font-weight:800;color:${totalGoalVal-totalActualVal>=0?'var(--green)':'var(--red)'">${R(totalGoalVal-totalActualVal)}</div>
+        <div style="font-size:11px;color:var(--gray5)">${totalGoalVal-totalActualVal>=0?'Dentro do orçamento':'Acima do orçamento'}</div>
+      </div>
+    </div>` : '';
+
+  el.innerHTML = summaryHtml + `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">${cardsHtml}</div>`;
+}
+
+// Fallback: calcula do state local quando v_goal_vs_actual não retorna dados
+function calcActualQty(catId, year, month){
+  return S.movs.filter(m=>m.type==='saida'&&m.cat&&getCatByName(m.cat)?.id===catId&&isSameMonth(m.ts,year,month)).reduce((s,m)=>s+m.qty,0);
+}
+function calcActualVal(catId, year, month){
+  return S.movs.filter(m=>m.type==='saida'&&m.cat&&getCatByName(m.cat)?.id===catId&&isSameMonth(m.ts,year,month)).reduce((s,m)=>s+m.total,0);
+}
+function getCatByName(name){ return S.cats.find(c=>c.name===name); }
+function isSameMonth(ts, year, month){ const d=new Date(ts); return d.getFullYear()===year&&d.getMonth()+1===month; }
+
+function openGoalModal(catId=null, year=null, month=null){
+  document.getElementById('gCat').innerHTML = S.cats.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  const now = new Date();
+  document.getElementById('gGoalId').value = '';
+  document.getElementById('gYear').value   = year  || now.getFullYear();
+  document.getElementById('gMonth').value  = month || now.getMonth()+1;
+  document.getElementById('gQty').value    = '';
+  document.getElementById('gVal').value    = '';
+  if(catId) document.getElementById('gCat').value = catId;
+  document.getElementById('mGoalT').textContent = 'Definir Meta Mensal';
+  openM('mGoal');
+}
+
+async function saveGoal(){
+  const catId = document.getElementById('gCat').value;
+  const year  = parseInt(document.getElementById('gYear').value);
+  const month = parseInt(document.getElementById('gMonth').value);
+  const qty   = parseFloat(document.getElementById('gQty').value)||0;
+  const val   = parseFloat(document.getElementById('gVal').value)||0;
+  if(!catId||!year||!month){ toast('Preencha todos os campos','e'); return; }
+  const row = { category_id:catId, year, month, goal_qty:qty, goal_value:val };
+  // Upsert: atualiza se já existe, insere se não
+  const {error} = await db.from('stock_goals').upsert(row, {onConflict:'category_id,year,month'});
+  if(error){ toast('Erro: '+error.message,'e'); return; }
+  toast('Meta salva!','s');
+  closeM('mGoal');
+  renderGoals();
+}
+
+// ============================================================
+// SQL — MELHORIAS DE MÉDIA PRIORIDADE
+// Execute no editor SQL do Supabase (pode rodar um bloco por vez)
+// ============================================================
+
+/*
+──────────────────────────────────────────────────────────────
+1. DATA/HORA DA ÚLTIMA ATUALIZAÇÃO POR ITEM
+   Adiciona last_updated_at em items e trigger automático
+──────────────────────────────────────────────────────────────
+
+ALTER TABLE items
+  ADD COLUMN IF NOT EXISTS last_updated_at TIMESTAMPTZ;
+
+CREATE OR REPLACE FUNCTION fn_touch_item_updated()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE items
+  SET last_updated_at = NOW()
+  WHERE id = NEW.item_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_touch_item_updated ON stock_movements;
+CREATE TRIGGER trg_touch_item_updated
+AFTER INSERT ON stock_movements
+FOR EACH ROW EXECUTE FUNCTION fn_touch_item_updated();
+
+
+──────────────────────────────────────────────────────────────
+2. HISTÓRICO POR ITEM ESPECÍFICO
+   View filtrável por item_id — usar com .eq('item_id', id)
+──────────────────────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW v_item_history AS
+SELECT
+  sm.id,
+  sm.item_id,
+  i.name           AS item_name,
+  c.name           AS category_name,
+  c.icon           AS category_icon,
+  u.full_name      AS user_name,
+  u.department,
+  sm.movement_type,
+  sm.quantity,
+  sm.quantity_before,
+  sm.quantity_after,
+  sm.unit_price,
+  sm.total_value,
+  sm.reason,
+  sm.invoice_number,
+  sm.created_at
+FROM stock_movements sm
+LEFT JOIN items      i ON i.id = sm.item_id
+LEFT JOIN categories c ON c.id = i.category_id
+LEFT JOIN users      u ON u.id = sm.user_id
+ORDER BY sm.created_at DESC;
+
+
+──────────────────────────────────────────────────────────────
+3. META DE ESTOQUE MENSAL POR CATEGORIA
+   Tabela de metas + view de comparativo meta vs realizado
+──────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS stock_goals (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  category_id  UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+  year         INT  NOT NULL,
+  month        INT  NOT NULL CHECK (month BETWEEN 1 AND 12),
+  goal_qty     NUMERIC(10,2) NOT NULL DEFAULT 0,
+  goal_value   NUMERIC(10,2) NOT NULL DEFAULT 0,
+  created_at   TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (category_id, year, month)
+);
+
+CREATE OR REPLACE VIEW v_goal_vs_actual AS
+SELECT
+  g.id            AS goal_id,
+  g.category_id,
+  c.name          AS category_name,
+  c.icon          AS category_icon,
+  g.year,
+  g.month,
+  g.goal_qty,
+  g.goal_value,
+  COALESCE(SUM(CASE WHEN sm.movement_type = 'saida' THEN sm.quantity    ELSE 0 END), 0) AS actual_qty,
+  COALESCE(SUM(CASE WHEN sm.movement_type = 'saida' THEN sm.total_value ELSE 0 END), 0) AS actual_value
+FROM stock_goals g
+LEFT JOIN categories c ON c.id = g.category_id
+LEFT JOIN items      i ON i.category_id = g.category_id
+LEFT JOIN stock_movements sm
+  ON  sm.item_id = i.id
+  AND EXTRACT(YEAR  FROM sm.created_at) = g.year
+  AND EXTRACT(MONTH FROM sm.created_at) = g.month
+GROUP BY g.id, g.category_id, c.name, c.icon, g.year, g.month, g.goal_qty, g.goal_value;
+
+*/
 </script>
 </body>
 </html>
