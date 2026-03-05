@@ -320,13 +320,119 @@ canvas{max-height:210px!important}
 
 @media(max-width:1024px){.charts-grid{grid-template-columns:1fr}.fg-row{grid-template-columns:1fr}.fg-row3{grid-template-columns:1fr 1fr}}
 @media(max-width:768px){.sidebar{display:none}.stats-row{grid-template-columns:1fr 1fr}.login-panel{display:none}.cat-hdr-stats{display:none}.totals-bar{flex-direction:column}.tb-item{border-right:none;border-bottom:var(--brd)}}
+
+/* ═══ PARTÍCULAS LOGIN ═══ */
+.lp-particles{position:absolute;inset:0;overflow:hidden;z-index:0}
+.lp-particle{position:absolute;border-radius:50%;background:rgba(255,255,255,0.08);animation:floatUp linear infinite}
+@keyframes floatUp{0%{transform:translateY(100%) scale(0);opacity:0}10%{opacity:1}90%{opacity:.3}100%{transform:translateY(-100vh) scale(1.5);opacity:0}}
+
+/* ═══ ALERTA CRÍTICO BANNER ═══ */
+#critBanner{display:none;position:fixed;top:0;left:0;right:0;z-index:9998;background:linear-gradient(90deg,#A50D25,#C8102E,#A50D25);background-size:200% 100%;padding:0;overflow:hidden}
+#critBanner.show{display:block;animation:bannerSlide .3s ease}
+@keyframes bannerSlide{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+.crit-banner-inner{display:flex;align-items:center;padding:9px 50px 9px 22px;gap:0}
+.crit-banner-scroll{display:flex;gap:0;animation:marqueeScroll 18s linear infinite;white-space:nowrap}
+@keyframes marqueeScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.crit-banner-item{display:inline-flex;align-items:center;gap:7px;color:#fff;font-size:11px;font-weight:700;white-space:nowrap;margin-right:60px}
+.crit-banner-close{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.2);border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;z-index:1;transition:background .12s}
+.crit-banner-close:hover{background:rgba(255,255,255,.4)}
+
+/* ═══ CONTADORES ANIMADOS ═══ */
+@keyframes countPop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+.count-anim{animation:countPop .5s cubic-bezier(.34,1.56,.64,1)}
+
+/* ═══ RIPPLE NOS BOTÕES ═══ */
+.btn{position:relative;overflow:hidden}
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.3);transform:scale(0);animation:rippleAnim .55s linear;pointer-events:none}
+@keyframes rippleAnim{to{transform:scale(4);opacity:0}}
+
+/* ═══ STAT CARD ENTRADA STAGGERED ═══ */
+.sc{animation:scIn .5s cubic-bezier(.34,1.56,.64,1) both}
+.sc:nth-child(1){animation-delay:.04s}
+.sc:nth-child(2){animation-delay:.10s}
+.sc:nth-child(3){animation-delay:.16s}
+.sc:nth-child(4){animation-delay:.22s}
+.sc:nth-child(5){animation-delay:.28s}
+@keyframes scIn{from{opacity:0;transform:translateY(24px) scale(.95)}to{opacity:1;transform:none}}
+
+/* ═══ TOAST MELHORADO ═══ */
+@keyframes tInNew{from{opacity:0;transform:translateX(48px) scale(.88)}to{opacity:1;transform:none}}
+.toast{animation:tInNew .35s cubic-bezier(.34,1.56,.64,1)!important}
+
+/* ═══ NOTIFICAÇÃO FLUTUANTE ═══ */
+#alertPopup{position:fixed;bottom:22px;right:18px;z-index:9990;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.alert-popup-item{display:flex;align-items:center;gap:10px;background:#fff;border-radius:var(--r);padding:12px 14px;box-shadow:0 8px 32px rgba(0,0,0,.14);border-left:4px solid var(--red);pointer-events:all;cursor:pointer;animation:popIn .4s cubic-bezier(.34,1.56,.64,1);max-width:300px;transition:transform .15s,box-shadow .15s}
+.alert-popup-item:hover{transform:translateX(-4px) scale(1.01);box-shadow:0 14px 40px rgba(0,0,0,.18)}
+.alert-popup-item.baixo{border-left-color:var(--amber)}
+.alert-popup-item.alto{border-left-color:var(--purple)}
+.alert-popup-item.saindo{animation:popOut .3s ease forwards!important}
+@keyframes popIn{from{opacity:0;transform:translateX(60px) scale(.88)}to{opacity:1;transform:none}}
+@keyframes popOut{to{opacity:0;transform:translateX(60px) scale(.88)}}
+.ap-icon{font-size:18px;flex-shrink:0}
+.ap-txt .ap-title{font-size:11px;font-weight:700;color:var(--black);line-height:1.3}
+.ap-txt .ap-sub{font-size:10px;color:var(--gray4);margin-top:2px}
+.ap-x{margin-left:auto;background:none;border:none;color:var(--gray4);cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0;transition:color .1s}
+.ap-x:hover{color:var(--black)}
+
+/* ═══ LOADER INICIAL ═══ */
+#appLoader{position:fixed;inset:0;background:var(--gray9);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s,visibility .5s}
+#appLoader.hide{opacity:0;visibility:hidden}
+.loader-una{font-family:'Barlow Condensed',sans-serif;font-size:64px;font-weight:800;color:#fff;letter-spacing:-3px;animation:ldPulse 1.2s ease-in-out infinite}
+@keyframes ldPulse{0%,100%{opacity:1}50%{opacity:.4}}
+.loader-bar{width:140px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+.loader-fill{height:100%;background:var(--red);border-radius:2px;animation:ldFill 1.2s ease forwards}
+@keyframes ldFill{from{width:0}to{width:100%}}
+.loader-txt{font-size:10px;color:rgba(255,255,255,.25);letter-spacing:3px;text-transform:uppercase}
+
+/* ═══ BARRA PROGRESSO TOPO ═══ */
+#topProgress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--red);z-index:99998;transition:width .25s ease;box-shadow:0 0 8px rgba(200,16,46,.7);pointer-events:none}
+
+/* ═══ SIDEBAR INDICATOR ═══ */
+.ni{transition:all .15s cubic-bezier(.4,0,.2,1);position:relative}
+.ni::after{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:0;background:rgba(255,255,255,.5);border-radius:0 2px 2px 0;transition:height .2s}
+.ni.on::after{height:55%}
+
+/* ═══ TABELA ROW HOVER ═══ */
+tbody tr{transition:background .1s,transform .12s}
+tbody tr:hover{transform:translateX(3px)}
+
+/* ═══ CAT CONTAINER ═══ */
+.cat-container{transition:box-shadow .2s,transform .2s}
+.cat-container:hover{transform:translateY(-1px)}
+
+/* ═══ PROGRESS BAR SUAVE ═══ */
+.sb-fill{transition:width 1s cubic-bezier(.4,0,.2,1)!important;will-change:width}
+
 </style>
 </head>
 <body>
 
+<!-- LOADER INICIAL -->
+<div id="appLoader">
+  <div class="loader-una">UNA</div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+  <div class="loader-txt">Carregando sistema</div>
+</div>
+
+<!-- BARRA DE PROGRESSO TOPO -->
+<div id="topProgress"></div>
+
+<!-- BANNER CRÍTICO -->
+<div id="critBanner" style="position:relative">
+  <div class="crit-banner-inner">
+    <div class="crit-banner-scroll" id="critScroll"></div>
+  </div>
+  <button class="crit-banner-close" onclick="closeBanner()">✕</button>
+</div>
+
+<!-- POPUP ALERTAS FLUTUANTES -->
+<div id="alertPopup"></div>
+
+
 <!-- ═══ LOGIN ═══ -->
 <div id="loginPage">
   <div class="login-panel">
+    <div class="lp-particles" id="lpParticles"></div>
     <div class="lp-logo">
       <div class="una">UNA</div>
       <div class="sep"></div>
@@ -1300,6 +1406,209 @@ async function doDel(id,type){
 }
 
 setInterval(()=>{if(S.user) recalcAlerts()},30000);
+
+// ═══════════════════════════════════════════════
+// ANIMAÇÕES & INTERATIVIDADE
+// ═══════════════════════════════════════════════
+
+// ── Loader inicial ──
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('appLoader').classList.add('hide');
+  }, 900);
+});
+
+// ── Partículas no painel de login ──
+function initParticles() {
+  const c = document.getElementById('lpParticles');
+  if (!c) return;
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'lp-particle';
+    const s = Math.random() * 28 + 6;
+    p.style.cssText = `
+      width:${s}px; height:${s}px;
+      left:${Math.random()*100}%;
+      bottom:-${s}px;
+      animation-duration:${Math.random()*8+5}s;
+      animation-delay:${Math.random()*6}s;
+      opacity:${Math.random()*.15+.04};
+    `;
+    c.appendChild(p);
+  }
+}
+initParticles();
+
+// ── Barra de progresso no topo ──
+function showProgress() {
+  const b = document.getElementById('topProgress');
+  b.style.width = '0';
+  b.style.transition = 'none';
+  setTimeout(() => {
+    b.style.transition = 'width .8s ease';
+    b.style.width = '70%';
+  }, 30);
+}
+function finishProgress() {
+  const b = document.getElementById('topProgress');
+  b.style.transition = 'width .2s ease';
+  b.style.width = '100%';
+  setTimeout(() => {
+    b.style.transition = 'opacity .3s';
+    b.style.opacity = '0';
+    setTimeout(() => { b.style.width = '0'; b.style.opacity = '1'; }, 350);
+  }, 250);
+}
+
+// ── Ripple nos botões ──
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.btn');
+  if (!btn) return;
+  const r = document.createElement('span');
+  r.className = 'ripple';
+  const rect = btn.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  r.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+  btn.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+});
+
+// ── Contador animado para KPIs ──
+function animateCount(el, from, to, duration = 600) {
+  if (!el) return;
+  const start = performance.now();
+  const update = now => {
+    const p = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    const cur = Math.round(from + (to - from) * ease);
+    el.textContent = cur.toLocaleString('pt-BR');
+    if (p < 1) requestAnimationFrame(update);
+  };
+  requestAnimationFrame(update);
+}
+
+// ── Banner de alertas críticos ──
+let bannerDismissed = false;
+function updateCritBanner() {
+  if (bannerDismissed) return;
+  const crits = S.alerts.filter(a => a.type === 'critico');
+  const banner = document.getElementById('critBanner');
+  const scroll = document.getElementById('critScroll');
+  if (!crits.length) { banner.classList.remove('show'); return; }
+
+  // Duplica para loop contínuo
+  const items = [...crits, ...crits].map(a =>
+    `<span class="crit-banner-item">⛔ ${a.nm} — ESTOQUE ZERADO</span>`
+  ).join('');
+  scroll.innerHTML = items;
+  banner.classList.add('show');
+
+  // Empurra o app para baixo
+  const h = banner.offsetHeight;
+  document.getElementById('app').style.marginTop = h + 'px';
+  document.getElementById('loginPage').style.marginTop = '0';
+}
+function closeBanner() {
+  bannerDismissed = true;
+  const banner = document.getElementById('critBanner');
+  banner.style.animation = 'bannerSlide .3s ease reverse forwards';
+  setTimeout(() => {
+    banner.classList.remove('show');
+    document.getElementById('app').style.marginTop = '0';
+  }, 280);
+}
+
+// ── Popup flutuante de alertas novos ──
+let shownAlerts = new Set();
+function showAlertPopups() {
+  const popup = document.getElementById('alertPopup');
+  const newAlerts = S.alerts.filter(a => !shownAlerts.has(a.id)).slice(0, 3);
+  newAlerts.forEach((a, idx) => {
+    shownAlerts.add(a.id);
+    setTimeout(() => {
+      const ic = { critico: '⛔', baixo: '⚠️', alto: '↑' };
+      const lb = { critico: 'Estoque Zerado', baixo: 'Estoque Baixo', alto: 'Excesso de Estoque' };
+      const el = document.createElement('div');
+      el.className = `alert-popup-item ${a.type}`;
+      el.innerHTML = `
+        <div class="ap-icon">${ic[a.type]}</div>
+        <div class="ap-txt">
+          <div class="ap-title">${a.nm}</div>
+          <div class="ap-sub">${lb[a.type]}</div>
+        </div>
+        <button class="ap-x" onclick="dismissPopup(this.parentElement)">✕</button>
+      `;
+      el.addEventListener('click', e => {
+        if (e.target.classList.contains('ap-x')) return;
+        go('alerts', document.querySelector('.ni[onclick*="alerts"]'));
+        dismissPopup(el);
+      });
+      popup.appendChild(el);
+      setTimeout(() => dismissPopup(el), 6000);
+    }, idx * 400);
+  });
+}
+function dismissPopup(el) {
+  el.classList.add('saindo');
+  setTimeout(() => el.remove(), 320);
+}
+
+// ── Patch: wrap loadData com progress bar ──
+const _origLoadData = loadData;
+loadData = async function() {
+  showProgress();
+  await _origLoadData();
+  finishProgress();
+};
+
+// ── Patch: recalcAlerts para disparar banner e popups ──
+const _origRecalc = recalcAlerts;
+recalcAlerts = function() {
+  _origRecalc();
+  updateCritBanner();
+  showAlertPopups();
+};
+
+// ── Patch: renderDash com contadores animados ──
+const _origRenderDash = renderDash;
+renderDash = function() {
+  _origRenderDash();
+  // Anima os números dos stat cards após render
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.sc-val').forEach(el => {
+      const raw = el.textContent.replace(/[^\d]/g, '');
+      if (!raw || raw.length > 10) return;
+      const num = parseInt(raw);
+      if (!isNaN(num) && num > 0) {
+        el.classList.add('count-anim');
+        animateCount(el, 0, num, 700);
+      }
+    });
+  });
+};
+
+// ── Smooth reveal nas linhas da tabela ──
+function animateTableRows(containerId) {
+  const rows = document.querySelectorAll(`#${containerId} tbody tr`);
+  rows.forEach((r, i) => {
+    r.style.opacity = '0';
+    r.style.transform = 'translateX(-8px)';
+    r.style.transition = 'opacity .25s, transform .25s';
+    setTimeout(() => {
+      r.style.opacity = '1';
+      r.style.transform = '';
+    }, i * 35);
+  });
+}
+
+// Aplica nas movimentações ao renderizar
+const _origRenderMov = renderMovements;
+renderMovements = function() {
+  _origRenderMov();
+  setTimeout(() => animateTableRows('page-movements'), 50);
+};
+
+
 </script>
 </body>
 </html>
