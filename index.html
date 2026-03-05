@@ -141,6 +141,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gray1);color:va
 .btn-pdf:hover{background:#dc2626;color:#fff}
 .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.3);transform:scale(0);animation:rippleAnim .55s linear;pointer-events:none}
 @keyframes rippleAnim{to{transform:scale(4);opacity:0}}
+
 /* ═══ CARDS ═══ */
 .card{background:#fff;border:var(--brd);border-radius:var(--r);box-shadow:var(--sh1);overflow:hidden}
 .card-hd{padding:14px 18px;border-bottom:var(--brd);display:flex;align-items:center;gap:10px}
@@ -395,6 +396,67 @@ canvas{max-height:210px!important}
 @keyframes floatUp{0%{transform:translateY(100%) scale(0);opacity:0}10%{opacity:1}90%{opacity:.3}100%{transform:translateY(-100vh) scale(1.5);opacity:0}}
 
 @media(max-width:1024px){.charts-grid{grid-template-columns:1fr}.fg-row{grid-template-columns:1fr}.fg-row3{grid-template-columns:1fr 1fr}}
+
+/* ═══════════════════════════════════════
+   ANIMAÇÕES AVANÇADAS
+═══════════════════════════════════════ */
+
+/* ── 1. SKELETON LOADING ── */
+.skeleton{background:linear-gradient(90deg,var(--gray2) 25%,var(--gray1) 50%,var(--gray2) 75%);background-size:200% 100%;animation:skelPulse 1.4s ease infinite;border-radius:var(--r3)}
+@keyframes skelPulse{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel-row{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--gray1)}
+.skel-circle{width:32px;height:32px;border-radius:50%;flex-shrink:0}
+.skel-line{height:10px;border-radius:4px}
+.skel-card{background:#fff;border:var(--brd);border-radius:var(--r);padding:18px;box-shadow:var(--sh1)}
+.skel-stat{height:90px;border-radius:var(--r);background:#fff;border:var(--brd);padding:16px 18px;box-shadow:var(--sh1);overflow:hidden}
+.skel-stat .skel-lbl{height:8px;width:60%;margin-bottom:14px}
+.skel-stat .skel-val{height:28px;width:45%}
+.skel-stat .skel-meta{height:8px;width:35%;margin-top:10px}
+.skel-table-row{display:flex;gap:10px;padding:11px 14px;border-bottom:1px solid var(--gray1);align-items:center}
+.skel-cat{border:var(--brd);border-radius:var(--r);background:#fff;box-shadow:var(--sh1);margin-bottom:18px;overflow:hidden}
+.skel-cat-hdr{padding:14px 18px;border-bottom:var(--brd);display:flex;align-items:center;gap:12px}
+
+/* ── 2. FLIP DE NÚMERO (estoque) ── */
+.flip-container{display:inline-block;perspective:400px;vertical-align:middle}
+.flip-num{display:inline-block;transform-origin:50% 50%}
+.flip-out{animation:flipOut .18s ease-in forwards}
+.flip-in{animation:flipIn .22s ease-out forwards}
+@keyframes flipOut{0%{transform:rotateX(0deg);opacity:1}100%{transform:rotateX(-90deg);opacity:0}}
+@keyframes flipIn{0%{transform:rotateX(90deg);opacity:0}100%{transform:rotateX(0deg);opacity:1}}
+
+/* ── 3. TRANSIÇÃO DE PÁGINA COM DIREÇÃO ── */
+.page.slide-left{animation:slideInLeft .22s cubic-bezier(.4,0,.2,1) both}
+.page.slide-right{animation:slideInRight .22s cubic-bezier(.4,0,.2,1) both}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes slideInRight{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
+
+/* ── 4. CONFETE ── */
+#confettiCanvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9997;display:none}
+
+/* ── 5. BADGE BOUNCE ── */
+@keyframes badgeBounce{0%{transform:scale(0) rotate(-10deg);opacity:0}60%{transform:scale(1.2) rotate(3deg)}80%{transform:scale(.95)}100%{transform:scale(1) rotate(0deg);opacity:1}}
+.badge-anim{animation:badgeBounce .4s cubic-bezier(.34,1.56,.64,1) both}
+
+/* ── 6. HIGHLIGHT DE LINHA ATUALIZADA ── */
+@keyframes rowHighlight{0%{background:rgba(21,128,61,.18)}100%{background:transparent}}
+.row-updated{animation:rowHighlight 2s ease forwards}
+
+/* ── 7. POP NO VALOR DO STAT CARD ── */
+@keyframes valuePop{0%{transform:scale(1)}40%{transform:scale(1.1)}100%{transform:scale(1)}}
+.value-pop{animation:valuePop .35s cubic-bezier(.34,1.56,.64,1)}
+
+/* ── 8. SHIMMER NOS CARDS DE META ── */
+.goal-card{position:relative;overflow:hidden}
+.goal-card::after{content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);animation:goalShimmer 3.5s ease infinite;pointer-events:none}
+@keyframes goalShimmer{0%{left:-100%}60%,100%{left:150%}}
+
+/* ── 9. ENTRADA ESCALONADA DE LINHAS ── */
+@keyframes rowSlideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+.row-enter{animation:rowSlideIn .2s ease both}
+
+/* ── 10. PULSE NOS TOTAIS AO NAVEGAR ── */
+@keyframes totalsPop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.totals-anim{animation:totalsPop .3s ease both}
 @media(max-width:768px){
   .sidebar{position:fixed;left:0;top:0;bottom:0;height:100vh;z-index:300;transform:translateX(-100%)}
   .sidebar.mob-open{transform:translateX(0)}
@@ -422,6 +484,7 @@ canvas{max-height:210px!important}
   <button class="crit-banner-close" onclick="closeBanner()">✕</button>
 </div>
 <div id="alertPopup"></div>
+<canvas id="confettiCanvas"></canvas>
 
 <!-- LOGIN -->
 <div id="loginPage">
@@ -946,10 +1009,18 @@ const META={
   goals:['Metas Mensais','Orçamento vs realizado por categoria'],
   logs:['Auditoria','Histórico de ações'],users:['Usuários','Gerenciar acessos']
 };
+const PAGE_ORDER=['dashboard','inventory','movements','categories','alerts','reports','goals','logs','users'];
+let currentPage='dashboard';
 function go(page,el){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  const fromIdx=PAGE_ORDER.indexOf(currentPage);
+  const toIdx=PAGE_ORDER.indexOf(page);
+  const dir=toIdx>fromIdx?'slide-left':'slide-right';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on','slide-left','slide-right'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
-  document.getElementById('page-'+page).classList.add('on');
+  const target=document.getElementById('page-'+page);
+  target.classList.add('on');
+  if(page!==currentPage){target.classList.add(dir);setTimeout(()=>target.classList.remove(dir),300);}
+  currentPage=page;
   if(el)el.classList.add('on');
   const m=META[page];
   document.getElementById('ttl').textContent=m[0];
@@ -1015,17 +1086,31 @@ function renderDash(){
 }
 
 // ═══ INVENTORY ═══
+function renderInventorySkeleton(){
+  const wrap=document.getElementById('catContainers');
+  wrap.innerHTML=[1,2,3].map(()=>`
+    <div class="skel-cat">
+      <div class="skel-cat-hdr">
+        <div class="skeleton skel-circle" style="border-radius:var(--r2);width:38px;height:38px"></div>
+        <div style="flex:1"><div class="skeleton skel-line" style="width:35%;margin-bottom:8px"></div><div class="skeleton skel-line" style="width:55%;height:8px"></div></div>
+        <div class="skeleton skel-line" style="width:80px;height:24px;border-radius:var(--r2)"></div>
+      </div>
+      ${[1,2,3,4].map(()=>`<div class="skel-table-row">${[30,55,15,18,22,20,18,14,16].map(w=>`<div class="skeleton skel-line" style="width:${w}%;height:10px"></div>`).join('')}</div>`).join('')}
+    </div>`).join('');
+  document.getElementById('invTotals').innerHTML=[1,2,3,4,5,6,7].map(()=>`<div class="tb-item"><div class="skeleton skel-line" style="width:60%;height:8px;margin-bottom:8px"></div><div class="skeleton skel-line" style="width:40%;height:20px"></div></div>`).join('');
+}
 function renderInventory(){
   const allItems=S.items.filter(i=>i.active);
   const totalVal=allItems.reduce((s,i)=>s+i.stock*i.price,0);
-  document.getElementById('invTotals').innerHTML=`
-    <div class="tb-item"><div class="tl">Total Itens</div><div class="tv">${allItems.length}</div></div>
-    <div class="tb-item"><div class="tl">Valor Total</div><div class="tv" style="color:var(--green)">${R(totalVal)}</div></div>
-    <div class="tb-item"><div class="tl">Críticos</div><div class="tv" style="color:var(--red)">${allItems.filter(i=>iSt(i)==='critico').length}</div></div>
-    <div class="tb-item"><div class="tl">Baixo Estoque</div><div class="tv" style="color:var(--amber)">${allItems.filter(i=>iSt(i)==='baixo').length}</div></div>
-    <div class="tb-item"><div class="tl">Normal</div><div class="tv" style="color:var(--green)">${allItems.filter(i=>iSt(i)==='normal').length}</div></div>
-    <div class="tb-item"><div class="tl">Excesso</div><div class="tv" style="color:var(--purple)">${allItems.filter(i=>iSt(i)==='alto').length}</div></div>
-    <div class="tb-item"><div class="tl">Categorias</div><div class="tv">${S.cats.length}</div></div>
+  const totalsEl=document.getElementById('invTotals');
+  totalsEl.innerHTML=`
+    <div class="tb-item totals-anim" style="animation-delay:.00s"><div class="tl">Total Itens</div><div class="tv">${allItems.length}</div></div>
+    <div class="tb-item totals-anim" style="animation-delay:.05s"><div class="tl">Valor Total</div><div class="tv" style="color:var(--green)">${R(totalVal)}</div></div>
+    <div class="tb-item totals-anim" style="animation-delay:.10s"><div class="tl">Críticos</div><div class="tv" style="color:var(--red)">${allItems.filter(i=>iSt(i)==='critico').length}</div></div>
+    <div class="tb-item totals-anim" style="animation-delay:.15s"><div class="tl">Baixo Estoque</div><div class="tv" style="color:var(--amber)">${allItems.filter(i=>iSt(i)==='baixo').length}</div></div>
+    <div class="tb-item totals-anim" style="animation-delay:.20s"><div class="tl">Normal</div><div class="tv" style="color:var(--green)">${allItems.filter(i=>iSt(i)==='normal').length}</div></div>
+    <div class="tb-item totals-anim" style="animation-delay:.25s"><div class="tl">Excesso</div><div class="tv" style="color:var(--purple)">${allItems.filter(i=>iSt(i)==='alto').length}</div></div>
+    <div class="tb-item totals-anim" style="animation-delay:.30s"><div class="tl">Categorias</div><div class="tv">${S.cats.length}</div></div>
   `;
   const wrap=document.getElementById('catContainers');
   wrap.innerHTML='';
@@ -1065,14 +1150,14 @@ function renderInventory(){
         ${catItems.length===0?`<div class="cat-empty"><div class="cat-empty-icon">${cat.icon}</div><p>Nenhum item${S.invF!=='all'||S.q?' com este filtro':' nesta categoria'}</p></div>`:`
         <div class="tbl-wrap"><table>
           <thead><tr><th>Item</th><th>Unid.</th><th>Qtd</th><th>Preço Unit.</th><th>Valor Total</th><th>Nível</th><th>Status</th><th>Local</th><th>Última Atualização</th><th></th></tr></thead>
-          <tbody>${catItems.map(i=>{const p=iPct(i);const col=iCol(i);return`<tr>
+          <tbody>${catItems.map((i,rowIdx)=>{const p=iPct(i);const col=iCol(i);return`<tr class="row-enter" style="animation-delay:${rowIdx*30}ms" data-item-id="${i.id}">
             <td><div class="t-name">${i.name}</div><div class="t-sub">${i.sup?'Forn: '+i.sup:''}</div></td>
             <td style="color:var(--gray5)">${i.unit}</td>
-            <td><strong style="font-size:14px">${i.stock}</strong></td>
+            <td><span class="flip-container"><strong class="flip-num" style="font-size:14px" id="stk-${i.id}">${i.stock}</strong></span></td>
             <td>${R(i.price)}</td>
             <td><strong style="color:var(--green)">${R(i.stock*i.price)}</strong></td>
-            <td style="min-width:110px"><div class="sb-row"><div class="sb-track"><div class="sb-fill" style="width:${Math.min(100,p)}%;background:${col}"></div></div><span class="sb-pct" style="color:${col}">${p}%</span></div></td>
-            <td>${badge(iSt(i))}</td>
+            <td style="min-width:110px">${animatedBar(p,col)}</td>
+            <td><span class="badge b-${iSt(i)} badge-anim" style="animation-delay:${rowIdx*30+200}ms">${_bl[iSt(i)]}</span></td>
             <td style="font-size:11px;color:var(--gray4)">${i.loc||'—'}</td>
             <td style="font-size:11px;white-space:nowrap">${i.lastUpd?fmtUpd(i.lastUpd):'<span style="color:var(--gray3)">—</span>'}</td>
             <td><div class="row-acts">${canEdit?`
@@ -1099,6 +1184,8 @@ function renderInventory(){
     wrap.appendChild(div);
   }
   if(!wrap.innerHTML&&(S.invF!=='all'||S.q))wrap.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><p>Nenhum item encontrado com o filtro atual</p></div>';
+  // Anima barras após render
+  requestAnimationFrame(()=>animateAllBars());
 }
 function toggleCat(id){S.collapsed[id]=!S.collapsed[id];document.getElementById('body-'+id)?.classList.toggle('collapsed');document.getElementById('toggle-'+id)?.classList.toggle('open');}
 function setF(f,el){S.invF=f;document.querySelectorAll('#invTabs .ftab').forEach(t=>t.classList.remove('on'));el.classList.add('on');renderInventory()}
@@ -1751,9 +1838,15 @@ function showAlertPopups(){
 }
 function dismissPopup(el){el.classList.add('saindo');setTimeout(()=>el.remove(),320);}
 
-// Patches com progress bar e animações
+// ── Patches principais ──
 const _origLoadData=loadData;
-loadData=async function(){showProgress();await _origLoadData();finishProgress();};
+loadData=async function(){
+  showProgress();
+  showDashSkeleton();
+  renderInventorySkeleton();
+  await _origLoadData();
+  finishProgress();
+};
 const _origRecalc=recalcAlerts;
 recalcAlerts=function(){_origRecalc();updateCritBanner();showAlertPopups();};
 const _origRenderDash=renderDash;
@@ -1772,6 +1865,148 @@ function animateTableRows(containerId){
 }
 const _origRenderMov=renderMovements;
 renderMovements=function(){_origRenderMov();setTimeout(()=>animateTableRows('page-movements'),50);};
+
+// ═══════════════════════════════════════════════
+// ANIMAÇÕES AVANÇADAS
+// ═══════════════════════════════════════════════
+
+// ── Skeleton Dashboard ──
+function showDashSkeleton(){
+  document.getElementById('dStats').innerHTML=[1,2,3,4,5].map(()=>`
+    <div class="skel-stat">
+      <div class="skeleton skel-lbl"></div>
+      <div class="skeleton skel-val"></div>
+      <div class="skeleton skel-meta"></div>
+    </div>`).join('');
+  document.getElementById('dashCrit').innerHTML=[1,2,3].map(()=>`
+    <div class="skel-row">
+      <div class="skeleton skel-circle"></div>
+      <div style="flex:1"><div class="skeleton skel-line" style="width:45%;margin-bottom:7px"></div><div class="skeleton skel-line" style="width:30%;height:8px"></div></div>
+      <div class="skeleton skel-line" style="width:80px;height:20px;border-radius:var(--r2)"></div>
+    </div>`).join('');
+}
+
+// ── Barra animada (barra + número contando juntos) ──
+function animatedBar(pct,color){
+  const safePct=Math.min(100,pct||0);
+  return`<div class="sb-row anim-bar-wrap">
+    <div class="sb-track" style="flex:1">
+      <div class="sb-fill anim-bar" data-target="${safePct}" data-color="${color}" style="width:0%;background:${color}"></div>
+    </div>
+    <span class="sb-pct anim-bar-pct" data-target="${pct||0}" style="color:${color}">0%</span>
+  </div>`;
+}
+function animateAllBars(){
+  document.querySelectorAll('.anim-bar').forEach(bar=>{
+    const target=parseFloat(bar.dataset.target)||0;
+    const pctEl=bar.closest('.sb-row')?.querySelector('.anim-bar-pct');
+    const duration=900;const start=performance.now();
+    const update=now=>{
+      const p=Math.min((now-start)/duration,1);
+      const ease=1-Math.pow(1-p,3);
+      bar.style.width=(target*ease)+'%';
+      if(pctEl)pctEl.textContent=Math.round(parseFloat(pctEl.dataset.target)*ease)+'%';
+      if(p<1)requestAnimationFrame(update);
+      else{bar.style.width=target+'%';if(pctEl)pctEl.textContent=Math.round(parseFloat(pctEl.dataset.target))+'%';}
+    };
+    requestAnimationFrame(update);
+  });
+}
+
+// ── Flip de número no estoque ──
+function flipStockNumber(itemId,newVal){
+  const el=document.getElementById('stk-'+itemId);
+  if(!el)return;
+  el.classList.add('flip-out');
+  setTimeout(()=>{
+    el.textContent=newVal;
+    el.classList.remove('flip-out');
+    el.classList.add('flip-in');
+    const row=el.closest('tr');
+    if(row){row.classList.add('row-updated');setTimeout(()=>row.classList.remove('row-updated'),2000);}
+    setTimeout(()=>el.classList.remove('flip-in'),300);
+  },180);
+}
+
+// ── Confete ──
+let confettiActive=false;
+function launchConfetti(){
+  if(confettiActive)return;
+  confettiActive=true;
+  const canvas=document.getElementById('confettiCanvas');
+  canvas.style.display='block';
+  const ctx=canvas.getContext('2d');
+  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  const colors=['#C8102E','#15803D','#1D4ED8','#B45309','#7C3AED','#FFD700'];
+  const pieces=Array.from({length:120},()=>({
+    x:Math.random()*canvas.width,y:Math.random()*-canvas.height*.5,
+    r:Math.random()*7+3,d:Math.random()*120+60,
+    color:colors[Math.floor(Math.random()*colors.length)],
+    tilt:Math.random()*10-10,tiltAngle:0,
+    tiltSpeed:Math.random()*.07+.03,speed:Math.random()*2.5+1.5,opacity:1
+  }));
+  let frame=0;
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p=>{
+      p.tiltAngle+=p.tiltSpeed;p.y+=p.speed*(Math.cos(p.d)+.5);
+      p.x+=Math.sin(p.d)*.8;p.tilt=Math.sin(p.tiltAngle)*12;
+      if(frame>120)p.opacity=Math.max(0,p.opacity-.015);
+      ctx.globalAlpha=p.opacity;ctx.beginPath();ctx.lineWidth=p.r;
+      ctx.strokeStyle=p.color;
+      ctx.moveTo(p.x+p.tilt+p.r/3,p.y);ctx.lineTo(p.x+p.tilt,p.y+p.tilt+p.r/3);
+      ctx.stroke();
+    });
+    ctx.globalAlpha=1;frame++;
+    if(frame<200)requestAnimationFrame(draw);
+    else{canvas.style.display='none';confettiActive=false;}
+  }
+  requestAnimationFrame(draw);
+  toast('🎉 Meta atingida! Parabéns!','s',4000);
+}
+
+// ── Checar se meta foi atingida ──
+async function checkGoalAchieved(catId){
+  if(!db)return;
+  const now=new Date();
+  const{data}=await db.from('v_goal_vs_actual').select('*')
+    .eq('category_id',catId).eq('year',now.getFullYear()).eq('month',now.getMonth()+1).single();
+  if(!data)return;
+  const gv=parseFloat(data.goal_value)||0,av=parseFloat(data.actual_value)||0;
+  const gq=parseFloat(data.goal_qty)||0,aq=parseFloat(data.actual_qty)||0;
+  if((gv>0&&av>=gv*.95&&av<=gv*1.05)||(gq>0&&aq>=gq*.95&&aq<=gq*1.05))launchConfetti();
+}
+
+// ── Patches doMov e quickMov para flip + confete ──
+const _origDoMov=doMov;
+doMov=async function(){
+  const iid=document.getElementById('mMovId').value;
+  const type=document.getElementById('mT').value;
+  await _origDoMov();
+  const item=S.items.find(x=>x.id===iid);
+  if(item)setTimeout(()=>flipStockNumber(iid,item.stock),100);
+  if(type==='saida'){const catId=S.items.find(x=>x.id===iid)?.cat;if(catId)setTimeout(()=>checkGoalAchieved(catId),600);}
+};
+const _origQuickMov=quickMov;
+quickMov=async function(){
+  const iid=document.getElementById('mvItm').value;
+  await _origQuickMov();
+  const item=S.items.find(x=>x.id===iid);
+  if(item)setTimeout(()=>flipStockNumber(iid,item.stock),100);
+};
+
+// ── Patch setF para re-animar linhas ao filtrar ──
+const _origSetF=setF;
+setF=function(f,el){
+  _origSetF(f,el);
+  setTimeout(()=>{
+    document.querySelectorAll('#catContainers tbody tr').forEach((r,i)=>{
+      r.style.animation='none';r.offsetHeight;
+      r.style.animation=`rowSlideIn .2s ease ${i*22}ms both`;
+    });
+    animateAllBars();
+  },60);
+};
 
 setInterval(()=>{if(S.user)recalcAlerts();},30000);
 </script>
