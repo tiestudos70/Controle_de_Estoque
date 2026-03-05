@@ -1118,15 +1118,15 @@ async function doMov(){
   const reason=document.getElementById('mR').value;
   const nf=document.getElementById('mNF').value;
   if(!qty||qty<=0){toast('Informe quantidade válida','e');return}
-  const idx=S.items.findIndex(x=>x.id===iid);
-  const before=S.items[idx].stock;
-  const after=type==='entrada'?before+qty:type==='saida'||type==='perda'?Math.max(0,before-qty):qty;
-  const i=S.items[idx]; const cat=getCat(i.cat);
-  const {error}=await db.from('items').update({current_stock:after}).eq('id',iid);
-  if(error){toast('Erro ao atualizar estoque','e');return}
-  await db.from('stock_movements').insert({item_id:iid,user_id:S.user.id,movement_type:type,quantity:qty,quantity_before:before,quantity_after:after,unit_price:price,reason,invoice_number:nf});
+  const i=S.items.find(x=>x.id===iid);
+  // Trigger fn_process_stock_movement cuida do estoque e quantity_before/after automaticamente
+  const {error}=await db.from('stock_movements').insert({
+    item_id:iid,user_id:S.user.id,movement_type:type,
+    quantity:qty,unit_price:price,reason,invoice_number:nf
+  });
+  if(error){toast('Erro: '+error.message,'e');return}
   const tl={entrada:'📥 Entrada',saida:'📤 Saída',ajuste:'⚖ Ajuste',perda:'✕ Perda'};
-  addLog(type,'mov',iid,`${tl[type]} de ${qty} ${i.unit} em "${i.name}" — ${before}→${after}`);
+  addLog(type,'mov',iid,`${tl[type]} de ${qty} ${i.unit} em "${i.name}"`);
   await loadData(); recalcAlerts(); closeM('mMov');
   toast(`${tl[type]}: ${qty} ${i.unit} de "${i.name}"`,'s');
   renderInventory(); renderDash();
@@ -1138,17 +1138,19 @@ async function quickMov(){
   const price=parseFloat(document.getElementById('mvPrc').value)||0;
   const reason=document.getElementById('mvRsn').value;
   if(!iid||!qty||qty<=0){toast('Selecione item e informe quantidade','e');return}
-  const idx=S.items.findIndex(x=>x.id===iid);
-  const before=S.items[idx].stock;
-  const after=type==='entrada'?before+qty:type==='saida'||type==='perda'?Math.max(0,before-qty):qty;
-  const i=S.items[idx]; const cat=getCat(i.cat);
-  await db.from('items').update({current_stock:after}).eq('id',iid);
-  await db.from('stock_movements').insert({item_id:iid,user_id:S.user.id,movement_type:type,quantity:qty,quantity_before:before,quantity_after:after,unit_price:price,reason});
-  addLog(type,'mov',iid,`${type} de ${qty} ${i.unit} em "${i.name}" — ${before}→${after}`);
+  const i=S.items.find(x=>x.id===iid);
+  // Trigger fn_process_stock_movement cuida do estoque automaticamente
+  const {error}=await db.from('stock_movements').insert({
+    item_id:iid,user_id:S.user.id,movement_type:type,
+    quantity:qty,unit_price:price,reason
+  });
+  if(error){toast('Erro: '+error.message,'e');return}
+  addLog(type,'mov',iid,`${type} de ${qty} ${i.unit} em "${i.name}"`);
   await loadData(); recalcAlerts(); toast('Movimentação registrada!','s');
   document.getElementById('mvQty').value=''; document.getElementById('mvRsn').value='';
   renderMovements();
 }
+
 function renderMovements(){
   const sel=document.getElementById('mvItm');
   sel.innerHTML='<option value="">Selecione item...</option>'+S.items.filter(i=>i.active).map(i=>`<option value="${i.id}">${getCat(i.cat).icon} ${i.name}</option>`).join('');
