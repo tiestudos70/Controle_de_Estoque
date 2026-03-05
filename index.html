@@ -798,14 +798,16 @@ async function loadData(){
     db.from('items').select('*').eq('is_active',true).order('name'),
     db.from('v_recent_movements').select('*').order('created_at',{ascending:false}).limit(200),
     db.from('users').select('id,login,full_name,role,department,is_active').order('full_name'),
-    db.from('stock_goals').select('*'),
   ]);
   if(cats.data)  S.cats  = cats.data.map(c=>({id:c.id,name:c.name,desc:c.description||'',color:c.color||'#C8102E',icon:c.icon||'📦'}));
   if(items.data) S.items = items.data.map(i=>({id:i.id,name:i.name,cat:i.category_id,unit:i.unit||'un',price:parseFloat(i.unit_price)||0,stock:parseInt(i.current_stock)||0,min:parseInt(i.min_stock)||0,max:parseInt(i.max_stock)||100,ideal:parseInt(i.ideal_stock)||50,loc:i.location||'',sup:i.supplier||'',notes:i.notes||'',bc:i.barcode||'',active:true,lastUpd:i.last_updated_at||null}));
   if(movs.data)  S.movs  = movs.data.map(m=>({id:m.id,iid:m.item_id,nm:m.item_name||'',cat:m.category_name||'',catIcon:m.category_icon||'',user:m.user_name||'',type:m.movement_type,qty:m.quantity,before:m.quantity_before,after:m.quantity_after,price:parseFloat(m.unit_price)||0,total:parseFloat(m.total_value)||0,reason:m.reason||'',nf:m.invoice_number||'',ts:m.created_at}));
   if(users.data) S.users = users.data;
-  const goalsRes = await db.from('stock_goals').select('*');
-  if(goalsRes.data) S.goals = goalsRes.data;
+  // stock_goals: carrega separado e com try/catch para não travar se tabela não existir ainda
+  try {
+    const goalsRes = await db.from('stock_goals').select('*');
+    if(goalsRes.data) S.goals = goalsRes.data;
+  } catch(e) { S.goals = []; }
 }
 
 // ═══════════════════════════════════════════════
@@ -1474,6 +1476,20 @@ window.addEventListener('load', () => {
     document.getElementById('appLoader').classList.add('hide');
   }, 900);
 });
+
+// ── Timeout de segurança: esconde loader mesmo se scripts demorarem ──
+// Evita tela presa em "Carregando sistema" em conexões lentas
+setTimeout(() => {
+  const loader = document.getElementById('appLoader');
+  if (loader && !loader.classList.contains('hide')) {
+    loader.classList.add('hide');
+    // Verifica se o Supabase carregou corretamente
+    if (typeof window.supabase === 'undefined') {
+      document.getElementById('lErr').textContent = 'Erro de conexão. Verifique sua internet e recarregue a página.';
+      document.getElementById('lErr').style.display = 'block';
+    }
+  }
+}, 5000); // 5 segundos de timeout máximo
 
 // ── Partículas no painel de login ──
 function initParticles() {
