@@ -382,6 +382,7 @@ canvas{max-height:210px!important}
 .loader-bar{width:140px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
 .loader-fill{height:100%;background:var(--red);border-radius:2px;animation:ldFill 1.2s ease forwards}
 @keyframes ldFill{from{width:0}to{width:100%}}
+@keyframes ldOut{0%{opacity:1;visibility:visible}90%{opacity:1;visibility:visible}100%{opacity:0;visibility:hidden}}
 .loader-txt{font-size:10px;color:rgba(255,255,255,.25);letter-spacing:3px;text-transform:uppercase}
 
 /* ═══ BARRA PROGRESSO TOPO ═══ */
@@ -403,6 +404,9 @@ tbody tr:hover{transform:translateX(3px)}
 /* ═══ PROGRESS BAR SUAVE ═══ */
 .sb-fill{transition:width 1s cubic-bezier(.4,0,.2,1)!important;will-change:width}
 
+
+.clr-ok{color:var(--green)}
+.clr-ng{color:var(--red)}
 </style>
 </head>
 <body>
@@ -1471,25 +1475,25 @@ setInterval(()=>{if(S.user) recalcAlerts()},30000);
 // ═══════════════════════════════════════════════
 
 // ── Loader inicial ──
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    document.getElementById('appLoader').classList.add('hide');
-  }, 900);
-});
-
-// ── Timeout de segurança: esconde loader mesmo se scripts demorarem ──
-// Evita tela presa em "Carregando sistema" em conexões lentas
-setTimeout(() => {
+// ── Loader: esconde assim que o DOM estiver pronto, no máximo em 3s ──
+function hideLoader() {
   const loader = document.getElementById('appLoader');
-  if (loader && !loader.classList.contains('hide')) {
-    loader.classList.add('hide');
-    // Verifica se o Supabase carregou corretamente
-    if (typeof window.supabase === 'undefined') {
-      document.getElementById('lErr').textContent = 'Erro de conexão. Verifique sua internet e recarregue a página.';
-      document.getElementById('lErr').style.display = 'block';
-    }
-  }
-}, 5000); // 5 segundos de timeout máximo
+  if (!loader) return;
+  loader.classList.add('hide');
+}
+
+// Tenta esconder assim que o DOM carregar
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  setTimeout(hideLoader, 800);
+} else {
+  document.addEventListener('DOMContentLoaded', () => setTimeout(hideLoader, 800));
+}
+
+// Backup 1: quando tudo carregar
+window.addEventListener('load', () => setTimeout(hideLoader, 500));
+
+// Backup 2: força após 3s independente de qualquer coisa
+setTimeout(hideLoader, 3000);
 
 // ── Partículas no painel de login ──
 function initParticles() {
@@ -1883,7 +1887,7 @@ async function renderGoals(){
         <div style="font-size:11px;color:var(--gray5)">Meta: ${totalGoalQty} un</div>
       </div>
       <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--gray4);font-weight:700;margin-bottom:4px">Saldo Orçamento</div>
-        <div style="font-size:22px;font-weight:800;color:${totalGoalVal-totalActualVal>=0?'var(--green)':'var(--red)'">${R(totalGoalVal-totalActualVal)}</div>
+        <div style="font-size:22px;font-weight:800" class="${totalGoalVal-totalActualVal>=0?'clr-ok':'clr-ng'}">${R(totalGoalVal-totalActualVal)}</div>
         <div style="font-size:11px;color:var(--gray5)">${totalGoalVal-totalActualVal>=0?'Dentro do orçamento':'Acima do orçamento'}</div>
       </div>
     </div>` : '';
