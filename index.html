@@ -382,7 +382,6 @@ canvas{max-height:210px!important}
 .loader-bar{width:140px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
 .loader-fill{height:100%;background:var(--red);border-radius:2px;animation:ldFill 1.2s ease forwards}
 @keyframes ldFill{from{width:0}to{width:100%}}
-@keyframes ldOut{0%{opacity:1;visibility:visible}90%{opacity:1;visibility:visible}100%{opacity:0;visibility:hidden}}
 .loader-txt{font-size:10px;color:rgba(255,255,255,.25);letter-spacing:3px;text-transform:uppercase}
 
 /* ═══ BARRA PROGRESSO TOPO ═══ */
@@ -404,9 +403,6 @@ tbody tr:hover{transform:translateX(3px)}
 /* ═══ PROGRESS BAR SUAVE ═══ */
 .sb-fill{transition:width 1s cubic-bezier(.4,0,.2,1)!important;will-change:width}
 
-
-.clr-ok{color:var(--green)}
-.clr-ng{color:var(--red)}
 </style>
 </head>
 <body>
@@ -582,7 +578,21 @@ tbody tr:hover{transform:translateX(3px)}
     <!-- REPORTS -->
     <div class="page" id="page-reports">
       <div class="export-panel">
-        <div><div class="export-title">📊 Exportar Relatórios</div><div class="export-sub">Gere PDFs detalhados por categoria ou geral</div></div>
+        <div>
+          <div class="export-title">📊 Exportar Relatórios</div>
+          <div class="export-sub">Gere PDFs detalhados por categoria ou período</div>
+        </div>
+        <!-- Filtro de período -->
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-size:11px;color:var(--gray4);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Período</div>
+          <div class="seg" id="relat-period-seg">
+            <button class="seg-b on" onclick="setRelatPeriod('hoje',this)">Hoje</button>
+            <button class="seg-b" onclick="setRelatPeriod('semana',this)">Semana</button>
+            <button class="seg-b" onclick="setRelatPeriod('mes',this)">Mês</button>
+            <button class="seg-b" onclick="setRelatPeriod('ano',this)">Ano</button>
+            <button class="seg-b" onclick="setRelatPeriod('tudo',this)">Tudo</button>
+          </div>
+        </div>
         <div class="export-actions">
           <button class="btn btn-pdf" onclick="exportPDF('all')">📄 Relatório Geral</button>
           <button class="btn btn-pdf" onclick="exportPDF('summary')">📊 Resumo Categorias</button>
@@ -802,16 +812,14 @@ async function loadData(){
     db.from('items').select('*').eq('is_active',true).order('name'),
     db.from('v_recent_movements').select('*').order('created_at',{ascending:false}).limit(200),
     db.from('users').select('id,login,full_name,role,department,is_active').order('full_name'),
+    db.from('stock_goals').select('*'),
   ]);
   if(cats.data)  S.cats  = cats.data.map(c=>({id:c.id,name:c.name,desc:c.description||'',color:c.color||'#C8102E',icon:c.icon||'📦'}));
   if(items.data) S.items = items.data.map(i=>({id:i.id,name:i.name,cat:i.category_id,unit:i.unit||'un',price:parseFloat(i.unit_price)||0,stock:parseInt(i.current_stock)||0,min:parseInt(i.min_stock)||0,max:parseInt(i.max_stock)||100,ideal:parseInt(i.ideal_stock)||50,loc:i.location||'',sup:i.supplier||'',notes:i.notes||'',bc:i.barcode||'',active:true,lastUpd:i.last_updated_at||null}));
   if(movs.data)  S.movs  = movs.data.map(m=>({id:m.id,iid:m.item_id,nm:m.item_name||'',cat:m.category_name||'',catIcon:m.category_icon||'',user:m.user_name||'',type:m.movement_type,qty:m.quantity,before:m.quantity_before,after:m.quantity_after,price:parseFloat(m.unit_price)||0,total:parseFloat(m.total_value)||0,reason:m.reason||'',nf:m.invoice_number||'',ts:m.created_at}));
   if(users.data) S.users = users.data;
-  // stock_goals: carrega separado e com try/catch para não travar se tabela não existir ainda
-  try {
-    const goalsRes = await db.from('stock_goals').select('*');
-    if(goalsRes.data) S.goals = goalsRes.data;
-  } catch(e) { S.goals = []; }
+  const goalsRes = await db.from('stock_goals').select('*');
+  if(goalsRes.data) S.goals = goalsRes.data;
 }
 
 // ═══════════════════════════════════════════════
@@ -1314,6 +1322,39 @@ function renderReports(){
 }
 
 // ═══════════════════════════════════════════════
+// PERIOD FILTER — RELATÓRIOS
+// ═══════════════════════════════════════════════
+let _relatPeriod = 'hoje';
+
+function setRelatPeriod(period, btn){
+  _relatPeriod = period;
+  document.querySelectorAll('#relat-period-seg .seg-b').forEach(b => b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+}
+
+function _filtrarMovsPorPeriodo(movs){
+  if(_relatPeriod === 'tudo') return movs;
+  const agora = new Date();
+  return movs.filter(m => {
+    if(!m.ts) return false;
+    const d = new Date(m.ts);
+    if(_relatPeriod === 'hoje'){
+      return d.toDateString() === agora.toDateString();
+    } else if(_relatPeriod === 'semana'){
+      const diff = (agora - d) / (1000*60*60*24);
+      return diff <= 7;
+    } else if(_relatPeriod === 'mes'){
+      return d.getMonth() === agora.getMonth() && d.getFullYear() === agora.getFullYear();
+    } else if(_relatPeriod === 'ano'){
+      return d.getFullYear() === agora.getFullYear();
+    }
+    return true;
+  });
+}
+
+const _periodoLabel = () => ({hoje:'Hoje',semana:'Últimos 7 dias',mes:'Este Mês',ano:'Este Ano',tudo:'Todo o Período'}[_relatPeriod]||_relatPeriod);
+
+// ═══════════════════════════════════════════════
 // PDF EXPORT
 // ═══════════════════════════════════════════════
 function exportPDF(mode='all',catId=null){
@@ -1322,36 +1363,54 @@ function exportPDF(mode='all',catId=null){
   const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
   const W=doc.internal.pageSize.getWidth();
   const dt=new Date().toLocaleString('pt-BR');
+  const periodo=_periodoLabel();
+  const movsDoP=_filtrarMovsPorPeriodo(S.movs);
+
   function header(title,sub){
     doc.setFillColor(200,16,46);doc.rect(0,0,W,18,'F');
     doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
     doc.text('UNA — Controle de Estoque',14,11);
     doc.setFontSize(10);doc.setFont('helvetica','normal');doc.text(title,W-14,11,{align:'right'});
     doc.setTextColor(50,50,50);doc.setFontSize(9);
-    doc.text(`Gerado: ${dt} | Usuário: ${S.user?.full_name||'—'}`,14,25);
+    doc.text(`Gerado: ${dt} | Usuário: ${S.user?.full_name||'—'} | Período: ${periodo}`,14,25);
     if(sub){doc.setFontSize(12);doc.setFont('helvetica','bold');doc.text(sub,14,33);}
   }
+
   if(mode==='all'){
-    header('Relatório Geral','Resumo por Categoria');
+    header('Relatório Geral','Resumo por Categoria — '+periodo);
     const totalGeral=S.items.filter(i=>i.active).reduce((s,i)=>s+i.stock*i.price,0);
-    doc.autoTable({startY:38,head:[['Categoria','Qtd','Valor Estoque (R$)','Críticos','Baixo','Normal','Excesso']],body:[...S.cats.map(cat=>{const its=S.items.filter(i=>i.cat===cat.id&&i.active);return[cat.name,its.length,Rd(catVal(cat)),its.filter(i=>iSt(i)==='critico').length,its.filter(i=>iSt(i)==='baixo').length,its.filter(i=>iSt(i)==='normal').length,its.filter(i=>iSt(i)==='alto').length]}),['TOTAL GERAL',S.items.filter(i=>i.active).length,Rd(totalGeral),'','','','']],styles:{fontSize:9},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]}});
+    doc.autoTable({startY:38,head:[['Categoria','Qtd','Valor Estoque (R$)','Críticos','Baixo','Normal','Excesso','Mov. no Período']],body:[...S.cats.map(cat=>{const its=S.items.filter(i=>i.cat===cat.id&&i.active);const movCat=movsDoP.filter(m=>m.cat===cat.name).length;return[cat.name,its.length,Rd(catVal(cat)),its.filter(i=>iSt(i)==='critico').length,its.filter(i=>iSt(i)==='baixo').length,its.filter(i=>iSt(i)==='normal').length,its.filter(i=>iSt(i)==='alto').length,movCat]}),['TOTAL GERAL',S.items.filter(i=>i.active).length,Rd(totalGeral),'','','','',movsDoP.length]],styles:{fontSize:9},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]}});
+
+    // Movimentações do período
+    if(movsDoP.length){
+      doc.addPage(); header('Movimentações — '+periodo,'Registros do Período ('+movsDoP.length+')');
+      doc.autoTable({startY:38,head:[['Item','Categoria','Tipo','Qtd','Antes','Depois','Valor(R$)','Motivo','Usuário','Data/Hora']],body:movsDoP.slice(0,150).map(m=>[m.nm,m.cat||'—',m.type.toUpperCase(),m.qty,m.before,m.after,Rd(m.total),m.reason||'—',m.user,fmtDt(m.ts)]),styles:{fontSize:8},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]}});
+    }
+
     for(const cat of S.cats){
       const its=S.items.filter(i=>i.cat===cat.id&&i.active); if(!its.length) continue;
       doc.addPage(); header(`Categoria: ${cat.name}`,`${cat.name} — ${its.length} item(s) · R$ ${Rd(catVal(cat))}`);
       doc.autoTable({startY:38,head:[['Item','Un.','Qtd','Preço (R$)','Total (R$)','Min','Max','Ideal','Local','Fornecedor','Status']],body:its.map(i=>[i.name,i.unit,i.stock,Rd(i.price),Rd(i.stock*i.price),i.min,i.max,i.ideal,i.loc||'—',i.sup||'—',{critico:'CRÍTICO',baixo:'BAIXO',normal:'NORMAL',alto:'EXCESSO'}[iSt(i)]]),styles:{fontSize:8},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]},didParseCell:d=>{if(d.section==='body'&&d.column.index===10){const v=d.cell.raw;d.cell.styles.textColor=v==='CRÍTICO'?[200,16,46]:v==='BAIXO'?[180,83,9]:v==='NORMAL'?[21,128,61]:[124,58,237];d.cell.styles.fontStyle='bold'}}});
     }
-    doc.save(`UNA_Relatorio_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.pdf`);
+    doc.save(`UNA_Relatorio_${periodo.replace(/\s/g,'_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.pdf`);
+
   } else if(mode==='summary'){
-    header('Resumo por Categoria','Visão Financeira');
+    header('Resumo por Categoria — '+periodo,'Visão Financeira');
     const tg=S.cats.reduce((s,c)=>s+catVal(c),0);
-    doc.autoTable({startY:38,head:[['Categoria','Itens','Valor Estoque','Críticos','Baixo','Normal','Excesso','% Total']],body:S.cats.map(cat=>{const val=catVal(cat);const its=S.items.filter(i=>i.cat===cat.id&&i.active);return[cat.name,its.length,'R$ '+Rd(val),its.filter(i=>iSt(i)==='critico').length,its.filter(i=>iSt(i)==='baixo').length,its.filter(i=>iSt(i)==='normal').length,its.filter(i=>iSt(i)==='alto').length,tg>0?((val/tg)*100).toFixed(1)+'%':'—']}),styles:{fontSize:9},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]}});
-    doc.save(`UNA_Resumo_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.pdf`);
+    doc.autoTable({startY:38,head:[['Categoria','Itens','Valor Estoque','Críticos','Baixo','Normal','Excesso','% Total','Mov. no Período']],body:S.cats.map(cat=>{const val=catVal(cat);const its=S.items.filter(i=>i.cat===cat.id&&i.active);const movCat=movsDoP.filter(m=>m.cat===cat.name).length;return[cat.name,its.length,'R$ '+Rd(val),its.filter(i=>iSt(i)==='critico').length,its.filter(i=>iSt(i)==='baixo').length,its.filter(i=>iSt(i)==='normal').length,its.filter(i=>iSt(i)==='alto').length,tg>0?((val/tg)*100).toFixed(1)+'%':'—',movCat]}),styles:{fontSize:9},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]}});
+    doc.save(`UNA_Resumo_${periodo.replace(/\s/g,'_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.pdf`);
+
   } else if(mode==='cat'&&catId){
     const cat=S.cats.find(c=>c.id===catId); if(!cat) return;
     const its=S.items.filter(i=>i.cat===catId&&i.active);
-    header(`Categoria: ${cat.name}`,`${cat.name} — ${its.length} item(s)`);
+    const movsCat=movsDoP.filter(m=>m.cat===cat.name);
+    header(`Categoria: ${cat.name} — ${periodo}`,`${cat.name} — ${its.length} item(s)`);
     doc.autoTable({startY:38,head:[['Item','Un.','Qtd','Preço (R$)','Total (R$)','Min','Max','Ideal','Local','Fornecedor','Status']],body:its.map(i=>[i.name,i.unit,i.stock,Rd(i.price),Rd(i.stock*i.price),i.min,i.max,i.ideal,i.loc||'—',i.sup||'—',{critico:'⛔ CRÍTICO',baixo:'⚠ BAIXO',normal:'✓ NORMAL',alto:'↑ EXCESSO'}[iSt(i)]]),styles:{fontSize:9},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]}});
-    doc.save(`UNA_${cat.name.replace(/\s/g,'_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.pdf`);
+    if(movsCat.length){
+      doc.addPage(); header(`Movimentações: ${cat.name} — ${periodo}`,`${movsCat.length} movimentação(ões) no período`);
+      doc.autoTable({startY:38,head:[['Item','Tipo','Qtd','Antes','Depois','Valor(R$)','Motivo','Usuário','Data/Hora']],body:movsCat.map(m=>[m.nm,m.type.toUpperCase(),m.qty,m.before,m.after,Rd(m.total),m.reason||'—',m.user,fmtDt(m.ts)]),styles:{fontSize:8},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]}});
+    }
+    doc.save(`UNA_${cat.name.replace(/\s/g,'_')}_${periodo.replace(/\s/g,'_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.pdf`);
   }
   toast('PDF gerado com sucesso!','s');
 }
@@ -1361,13 +1420,15 @@ function exportMovPDF(){
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
   const W=doc.internal.pageSize.getWidth();
+  const periodo=_periodoLabel();
+  const movs=_filtrarMovsPorPeriodo(S.movs);
   doc.setFillColor(200,16,46);doc.rect(0,0,W,18,'F');
   doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');doc.text('UNA — Controle de Estoque',14,11);
-  doc.setFontSize(10);doc.text('Relatório de Movimentações',W-14,11,{align:'right'});
-  doc.setTextColor(50,50,50);doc.setFontSize(9);doc.text(`Gerado: ${new Date().toLocaleString('pt-BR')} | ${S.movs.length} registros`,14,25);
-  if(!S.movs.length){doc.setFontSize(12);doc.text('Nenhuma movimentação registrada.',14,35);doc.save('UNA_Movimentacoes.pdf');return}
-  doc.autoTable({startY:30,head:[['Item','Categoria','Tipo','Qtd','Antes','Depois','Valor(R$)','Motivo','Usuário','Data/Hora']],body:S.movs.slice(0,200).map(m=>[m.nm,m.cat||'—',m.type.toUpperCase(),m.qty,m.before,m.after,Rd(m.total),m.reason||'—',m.user,fmtDt(m.ts)]),styles:{fontSize:8},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]}});
-  doc.save(`UNA_Movimentacoes_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.pdf`);
+  doc.setFontSize(10);doc.text('Movimentações — '+periodo,W-14,11,{align:'right'});
+  doc.setTextColor(50,50,50);doc.setFontSize(9);doc.text(`Gerado: ${new Date().toLocaleString('pt-BR')} | ${movs.length} registros no período | Usuário: ${S.user?.full_name||'—'}`,14,25);
+  if(!movs.length){doc.setFontSize(12);doc.text('Nenhuma movimentação no período selecionado.',14,35);doc.save(`UNA_Movimentacoes_${periodo.replace(/\s/g,'_')}.pdf`);toast('Nenhuma movimentação no período','w');return}
+  doc.autoTable({startY:30,head:[['Item','Categoria','Tipo','Qtd','Antes','Depois','Valor(R$)','Motivo','Usuário','Data/Hora']],body:movs.slice(0,200).map(m=>[m.nm,m.cat||'—',m.type.toUpperCase(),m.qty,m.before,m.after,Rd(m.total),m.reason||'—',m.user,fmtDt(m.ts)]),styles:{fontSize:8},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]}});
+  doc.save(`UNA_Movimentacoes_${periodo.replace(/\s/g,'_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.pdf`);
   toast('PDF de movimentações gerado!','s');
 }
 
@@ -1475,25 +1536,11 @@ setInterval(()=>{if(S.user) recalcAlerts()},30000);
 // ═══════════════════════════════════════════════
 
 // ── Loader inicial ──
-// ── Loader: esconde assim que o DOM estiver pronto, no máximo em 3s ──
-function hideLoader() {
-  const loader = document.getElementById('appLoader');
-  if (!loader) return;
-  loader.classList.add('hide');
-}
-
-// Tenta esconder assim que o DOM carregar
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-  setTimeout(hideLoader, 800);
-} else {
-  document.addEventListener('DOMContentLoaded', () => setTimeout(hideLoader, 800));
-}
-
-// Backup 1: quando tudo carregar
-window.addEventListener('load', () => setTimeout(hideLoader, 500));
-
-// Backup 2: força após 3s independente de qualquer coisa
-setTimeout(hideLoader, 3000);
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('appLoader').classList.add('hide');
+  }, 900);
+});
 
 // ── Partículas no painel de login ──
 function initParticles() {
@@ -1887,7 +1934,7 @@ async function renderGoals(){
         <div style="font-size:11px;color:var(--gray5)">Meta: ${totalGoalQty} un</div>
       </div>
       <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--gray4);font-weight:700;margin-bottom:4px">Saldo Orçamento</div>
-        <div style="font-size:22px;font-weight:800" class="${totalGoalVal-totalActualVal>=0?'clr-ok':'clr-ng'}">${R(totalGoalVal-totalActualVal)}</div>
+        <div style="font-size:22px;font-weight:800;color:${totalGoalVal-totalActualVal>=0?'var(--green)':'var(--red)'">${R(totalGoalVal-totalActualVal)}</div>
         <div style="font-size:11px;color:var(--gray5)">${totalGoalVal-totalActualVal>=0?'Dentro do orçamento':'Acima do orçamento'}</div>
       </div>
     </div>` : '';
