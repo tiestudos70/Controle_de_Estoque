@@ -640,13 +640,13 @@ const S = {
 async function loadData(){
   const [cats, items, movs, users] = await Promise.all([
     db.from('categories').select('*').order('name'),
-    db.from('items').select('*').eq('active',true).order('name'),
-    db.from('movements').select('*').order('created_at',{ascending:false}).limit(200),
-    db.from('users').select('id,login,full_name,role,department').order('full_name'),
+    db.from('items').select('*').eq('is_active',true).order('name'),
+    db.from('v_recent_movements').select('*').order('created_at',{ascending:false}).limit(200),
+    db.from('users').select('id,login,full_name,role,department,is_active').order('full_name'),
   ]);
   if(cats.data)  S.cats  = cats.data.map(c=>({id:c.id,name:c.name,desc:c.description||'',color:c.color||'#C8102E',icon:c.icon||'📦'}));
-  if(items.data) S.items = items.data.map(i=>({id:i.id,name:i.name,cat:i.category_id,unit:i.unit||'un',price:parseFloat(i.price)||0,stock:parseInt(i.stock)||0,min:parseInt(i.stock_min)||0,max:parseInt(i.stock_max)||100,ideal:parseInt(i.stock_ideal)||50,loc:i.location||'',sup:i.supplier||'',notes:i.notes||'',bc:i.code||'',active:true}));
-  if(movs.data)  S.movs  = movs.data.map(m=>({id:m.id,iid:m.item_id,nm:m.item_name||'',cat:m.category_name||'',catIcon:m.category_icon||'',user:m.user_name||'',type:m.type,qty:m.quantity,before:m.stock_before,after:m.stock_after,price:parseFloat(m.unit_price)||0,total:parseFloat(m.total_value)||0,reason:m.reason||'',nf:m.reference||'',ts:m.created_at}));
+  if(items.data) S.items = items.data.map(i=>({id:i.id,name:i.name,cat:i.category_id,unit:i.unit||'un',price:parseFloat(i.unit_price)||0,stock:parseInt(i.current_stock)||0,min:parseInt(i.min_stock)||0,max:parseInt(i.max_stock)||100,ideal:parseInt(i.ideal_stock)||50,loc:i.location||'',sup:i.supplier||'',notes:i.notes||'',bc:i.barcode||'',active:true}));
+  if(movs.data)  S.movs  = movs.data.map(m=>({id:m.id,iid:m.item_id,nm:m.item_name||'',cat:m.category_name||'',catIcon:m.category_icon||'',user:m.user_name||'',type:m.movement_type,qty:m.quantity,before:m.quantity_before,after:m.quantity_after,price:parseFloat(m.unit_price)||0,total:parseFloat(m.total_value)||0,reason:m.reason||'',nf:m.invoice_number||'',ts:m.created_at}));
   if(users.data) S.users = users.data;
 }
 
@@ -717,7 +717,7 @@ async function doLogin(){
       .select('*')
       .eq('login', login)
       .eq('senha', senha)
-      .eq('active', true)
+      .eq('is_active', true)
       .single();
 
     if(error || !data){
@@ -978,7 +978,7 @@ async function saveItem(){
   const nm=document.getElementById('iNm').value.trim();
   if(!nm){toast('Informe o nome do item','e');return}
   const id=document.getElementById('eiId').value;
-  const row={name:nm,category_id:document.getElementById('iCt').value,unit:document.getElementById('iUn').value,price:parseFloat(document.getElementById('iPr').value)||0,stock:parseInt(document.getElementById('iSt').value)||0,stock_min:parseInt(document.getElementById('iMn').value)||0,stock_max:parseInt(document.getElementById('iMx').value)||100,stock_ideal:parseInt(document.getElementById('iId').value)||50,location:document.getElementById('iLc').value,supplier:document.getElementById('iSp').value,code:document.getElementById('iBc').value,notes:document.getElementById('iNo').value,active:true};
+  const row={name:nm,category_id:document.getElementById('iCt').value,unit:document.getElementById('iUn').value,unit_price:parseFloat(document.getElementById('iPr').value)||0,current_stock:parseInt(document.getElementById('iSt').value)||0,min_stock:parseInt(document.getElementById('iMn').value)||0,max_stock:parseInt(document.getElementById('iMx').value)||100,ideal_stock:parseInt(document.getElementById('iId').value)||50,location:document.getElementById('iLc').value,supplier:document.getElementById('iSp').value,barcode:document.getElementById('iBc').value,notes:document.getElementById('iNo').value,is_active:true};
   if(id){
     const {error}=await db.from('items').update(row).eq('id',id);
     if(error){toast('Erro: '+error.message,'e');return}
@@ -1016,9 +1016,9 @@ async function doMov(){
   const before=S.items[idx].stock;
   const after=type==='entrada'?before+qty:type==='saida'||type==='perda'?Math.max(0,before-qty):qty;
   const i=S.items[idx]; const cat=getCat(i.cat);
-  const {error}=await db.from('items').update({stock:after}).eq('id',iid);
+  const {error}=await db.from('items').update({current_stock:after}).eq('id',iid);
   if(error){toast('Erro ao atualizar estoque','e');return}
-  await db.from('movements').insert({item_id:iid,item_name:i.name,category_name:cat.name,category_icon:cat.icon,user_name:S.user.full_name,type,quantity:qty,stock_before:before,stock_after:after,unit_price:price,total_value:qty*price,reason,reference:nf});
+  await db.from('stock_movements').insert({item_id:iid,user_id:S.user.id,movement_type:type,quantity:qty,quantity_before:before,quantity_after:after,unit_price:price,reason,invoice_number:nf});
   const tl={entrada:'📥 Entrada',saida:'📤 Saída',ajuste:'⚖ Ajuste',perda:'✕ Perda'};
   addLog(type,'mov',iid,`${tl[type]} de ${qty} ${i.unit} em "${i.name}" — ${before}→${after}`);
   await loadData(); recalcAlerts(); closeM('mMov');
@@ -1036,8 +1036,8 @@ async function quickMov(){
   const before=S.items[idx].stock;
   const after=type==='entrada'?before+qty:type==='saida'||type==='perda'?Math.max(0,before-qty):qty;
   const i=S.items[idx]; const cat=getCat(i.cat);
-  await db.from('items').update({stock:after}).eq('id',iid);
-  await db.from('movements').insert({item_id:iid,item_name:i.name,category_name:cat.name,category_icon:cat.icon,user_name:S.user.full_name,type,quantity:qty,stock_before:before,stock_after:after,unit_price:price,total_value:qty*price,reason});
+  await db.from('items').update({current_stock:after}).eq('id',iid);
+  await db.from('stock_movements').insert({item_id:iid,user_id:S.user.id,movement_type:type,quantity:qty,quantity_before:before,quantity_after:after,unit_price:price,reason});
   addLog(type,'mov',iid,`${type} de ${qty} ${i.unit} em "${i.name}" — ${before}→${after}`);
   await loadData(); recalcAlerts(); toast('Movimentação registrada!','s');
   document.getElementById('mvQty').value=''; document.getElementById('mvRsn').value='';
@@ -1256,7 +1256,7 @@ async function saveUser(){
   if(!nm||!lg){toast('Preencha nome e login','e');return}
   if(!id&&(!pw||pw.length<6)){toast('Senha: mínimo 6 caracteres','e');return}
   if(pw&&pw!==pw2){toast('Senhas não coincidem','e');return}
-  const row={full_name:nm,login:lg,role:document.getElementById('uRl').value,department:document.getElementById('uDp').value};
+  const row={full_name:nm,login:lg,role:document.getElementById('uRl').value,department:document.getElementById('uDp').value,is_active:true};
   if(pw) row.senha=pw;
   if(id){
     const {error}=await db.from('users').update(row).eq('id',id);
@@ -1282,7 +1282,7 @@ function confirmDel(id,type){
 async function doDel(id,type){
   if(type==='item'){
     const nm=S.items.find(i=>i.id===id)?.name;
-    await db.from('items').update({active:false}).eq('id',id);
+    await db.from('items').update({is_active:false}).eq('id',id);
     addLog('DELETE','item',id,`Excluiu item: ${nm}`); toast('Item excluído','w');
     await loadData(); recalcAlerts(); renderInventory(); renderDash();
   } else if(type==='cat'){
