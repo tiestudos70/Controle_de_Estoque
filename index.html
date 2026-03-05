@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -697,54 +698,41 @@ canvas{max-height:210px!important}
 
 <script>
 // ═══════════════════════════════════════════════════
-// DEMO USERS DB
+// SUPABASE CONFIG
 // ═══════════════════════════════════════════════════
-const UDB = [
-  {id:'u1',full_name:'Ismael Admin',email:'admin@una.br',password:'admin123',role:'admin',department:'TI'},
-  {id:'u2',full_name:'Marcos Gerente',email:'manager@una.br',password:'mg123',role:'manager',department:'Infraestrutura'},
-  {id:'u3',full_name:'Ana Viewer',email:'viewer@una.br',password:'view123',role:'viewer',department:'Limpeza'},
-];
+const SUPA_URL = 'https://mcqhwgspqvsviqwglxhe.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jcWh3Z3NwcXZzdmlxd2dseGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NzA2NDMsImV4cCI6MjA4ODI0NjY0M30.MuxfyERAv-G-wBE8GYz1GLUTyRrS725E650-aKJhus8';
+const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
 // ═══════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════
 const S = {
   user: null,
-  cats: [
-    {id:'c1',name:'Limpeza',desc:'Produtos e materiais de limpeza geral',color:'#C8102E',icon:'🧹'},
-    {id:'c2',name:'Alimentação',desc:'Alimentos, bebidas e suprimentos de copa',color:'#B45309',icon:'☕'},
-    {id:'c3',name:'Infraestrutura',desc:'Materiais de manutenção e reparo',color:'#1D4ED8',icon:'🔧'},
-    {id:'c4',name:'Descartáveis',desc:'Copos, pratos e embalagens descartáveis',color:'#15803D',icon:'🗑️'},
-    {id:'c5',name:'Higiene / Segurança',desc:'EPI, higiene coletiva e infectantes',color:'#7C3AED',icon:'🦺'},
-  ],
-  items: [
-    {id:'i1', name:'Papel Higiênico',    cat:'c1',unit:'rolo',  price:1.50, stock:300,min:100,max:500,ideal:250,loc:'Almox. A1',sup:'Distribuidora X',notes:'',bc:'',active:true},
-    {id:'i2', name:'Papel Toalha',       cat:'c1',unit:'rolo',  price:3.00, stock:0,  min:50, max:200,ideal:100,loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i3', name:'Detergente',         cat:'c1',unit:'un',    price:2.50, stock:5,  min:20, max:100,ideal:50, loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i4', name:'Cera',               cat:'c1',unit:'litro', price:12.00,stock:15, min:10, max:40, ideal:20, loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i5', name:'Removedor',          cat:'c1',unit:'litro', price:8.00, stock:0,  min:10, max:40, ideal:20, loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i6', name:'Saco de Lixo 200L',  cat:'c1',unit:'pacote',price:25.00,stock:0,  min:10, max:50, ideal:25, loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i7', name:'Saco de Lixo 100L',  cat:'c1',unit:'pacote',price:18.00,stock:7,  min:10, max:50, ideal:25, loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i8', name:'Saco de Lixo 50L',   cat:'c1',unit:'pacote',price:12.00,stock:25, min:10, max:50, ideal:25, loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i9', name:'Café',               cat:'c2',unit:'pacote',price:18.00,stock:8,  min:10, max:50, ideal:25, loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i10',name:'Biscoito Waffer',    cat:'c2',unit:'pacote',price:4.50, stock:45, min:20, max:100,ideal:50, loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i11',name:'Biscoito Água e Sal',cat:'c2',unit:'pacote',price:3.50, stock:60, min:20, max:100,ideal:50, loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i12',name:'Adoçante',           cat:'c2',unit:'caixa', price:6.00, stock:3,  min:10, max:50, ideal:25, loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i13',name:'Açúcar 5kg',         cat:'c2',unit:'pacote',price:22.00,stock:12, min:10, max:50, ideal:25, loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i14',name:'Copo Descartável 300ml',cat:'c4',unit:'pacote',price:8.00,stock:120,min:20,max:100,ideal:50,loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i15',name:'Copo Descartável 80ml', cat:'c4',unit:'pacote',price:5.00,stock:30, min:20,max:100,ideal:50,loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i16',name:'Copo Descartável 50ml', cat:'c4',unit:'pacote',price:4.00,stock:15, min:20,max:100,ideal:50,loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i17',name:'Saco Infectante 200L',  cat:'c5',unit:'pacote',price:45.00,stock:0,min:10,max:30,ideal:15, loc:'',sup:'',notes:'',bc:'',active:true},
-    {id:'i18',name:'Saco Infectante 100L',  cat:'c5',unit:'pacote',price:32.00,stock:5,min:10,max:30,ideal:15, loc:'',sup:'',notes:'',bc:'',active:true},
-  ],
+  cats: [],
+  items: [],
   movs: [],
   logs: [],
-  users: UDB.map(u=>({id:u.id,full_name:u.full_name,email:u.email,role:u.role,department:u.department})),
+  users: [],
   alerts: [],
   charts: {},
   invF:'all', movF:'all', logF:'all', q:'',
   collapsed: {},
 };
+
+// ─── Carrega dados do Supabase ───────────────────
+async function loadData(){
+  const [cats, items, movs, users] = await Promise.all([
+    db.from('categories').select('*').order('name'),
+    db.from('items').select('*').eq('active',true).order('name'),
+    db.from('movements').select('*').order('created_at',{ascending:false}).limit(200),
+    db.from('users').select('id,full_name,email,role,department').order('full_name'),
+  ]);
+  if(cats.data)  S.cats  = cats.data.map(c=>({id:c.id,name:c.name,desc:c.description||'',color:c.color||'#C8102E',icon:c.icon||'📦'}));
+  if(items.data) S.items = items.data.map(i=>({id:i.id,name:i.name,cat:i.category_id,unit:i.unit||'un',price:parseFloat(i.price)||0,stock:parseInt(i.stock)||0,min:parseInt(i.stock_min)||0,max:parseInt(i.stock_max)||100,ideal:parseInt(i.stock_ideal)||50,loc:i.location||'',sup:i.supplier||'',notes:i.notes||'',bc:i.code||'',active:true}));
+  if(movs.data)  S.movs  = movs.data.map(m=>({id:m.id,iid:m.item_id,nm:m.item_name||'',cat:m.category_name||'',catIcon:m.category_icon||'',user:m.user_name||'',type:m.type,qty:m.quantity,before:m.stock_before,after:m.stock_after,price:parseFloat(m.unit_price)||0,total:parseFloat(m.total_value)||0,reason:m.reason||'',nf:m.reference||'',ts:m.created_at}));
+  if(users.data) S.users = users.data;
+}
 
 // ═══════════════════════════════════════════════════
 // HELPERS
@@ -795,28 +783,24 @@ function toast(msg,type='s',ms=3000){
 }
 
 // ═══════════════════════════════════════════════════
-// AUTH
+// AUTH — Supabase
 // ═══════════════════════════════════════════════════
-function doLogin(){
+async function doLogin(){
   const e=document.getElementById('le').value.trim(),p=document.getElementById('lp').value;
   const err=document.getElementById('lErr');
   const btn=document.getElementById('loginBtn');
   err.style.display='none';
   if(!e||!p){err.textContent='Preencha e-mail e senha.';err.style.display='block';return}
-
-  // Simula feedback visual de carregamento
   btn.disabled=true;
   btn.innerHTML='<span class="spinner"></span> Entrando...';
-
-  setTimeout(()=>{
-    const u=UDB.find(x=>x.email===e&&x.password===p);
-    if(!u){
-      err.style.display='block';
-      btn.disabled=false;
-      btn.textContent='Entrar no Sistema';
-      return;
-    }
-    S.user=u;
+  try {
+    const {data,error} = await db.auth.signInWithPassword({email:e,password:p});
+    if(error||!data.user) throw error;
+    // Busca perfil do usuário
+    const {data:prof} = await db.from('users').select('*').eq('id',data.user.id).single();
+    const u = prof || {id:data.user.id, full_name:data.user.email, email:data.user.email, role:'viewer', department:''};
+    S.user = u;
+    await loadData();
     document.getElementById('loginPage').style.display='none';
     document.getElementById('app').style.display='flex';
     document.getElementById('sbAv').textContent=u.full_name.charAt(0).toUpperCase();
@@ -827,15 +811,19 @@ function doLogin(){
     addLog('LOGIN','auth',null,`${u.full_name} acessou o sistema`);
     recalcAlerts();
     renderDash();
-    btn.disabled=false;
-    btn.textContent='Entrar no Sistema';
-  }, 400);
+  } catch(ex) {
+    err.textContent='E-mail ou senha incorretos.';
+    err.style.display='block';
+  }
+  btn.disabled=false;
+  btn.textContent='Entrar no Sistema';
 }
 document.getElementById('lp').onkeydown=e=>{if(e.key==='Enter')doLogin()};
 document.getElementById('le').onkeydown=e=>{if(e.key==='Enter')doLogin()};
 
-function doLogout(){
+async function doLogout(){
   addLog('LOGOUT','auth',null,`${S.user?.full_name} saiu do sistema`);
+  await db.auth.signOut();
   S.user=null;
   document.getElementById('app').style.display='none';
   document.getElementById('loginPage').style.display='flex';
@@ -1097,13 +1085,34 @@ function updateValPreview(){
   el.style.display=v>0?'block':'none';
   document.getElementById('prevVal').textContent=R(v);
 }
-function saveItem(){
+async function saveItem(){
   const nm=document.getElementById('iNm').value.trim();
   if(!nm){toast('Informe o nome do item','e');return}
   const id=document.getElementById('eiId').value;
-  const d={name:nm,cat:document.getElementById('iCt').value,unit:document.getElementById('iUn').value,price:parseFloat(document.getElementById('iPr').value)||0,stock:parseInt(document.getElementById('iSt').value)||0,min:parseInt(document.getElementById('iMn').value)||0,max:parseInt(document.getElementById('iMx').value)||100,ideal:parseInt(document.getElementById('iId').value)||50,loc:document.getElementById('iLc').value,sup:document.getElementById('iSp').value,bc:document.getElementById('iBc').value,notes:document.getElementById('iNo').value,active:true,upd:new Date().toISOString()};
-  if(id){const idx=S.items.findIndex(x=>x.id===id);S.items[idx]={...S.items[idx],...d};addLog('UPDATE','item',id,`Editou item: ${nm}`);toast(`"${nm}" atualizado`,'s');}
-  else{S.items.push({id:gid(),...d});addLog('CREATE','item',null,`Cadastrou item: ${nm} na categoria ${getCat(d.cat).name}`);toast(`"${nm}" cadastrado`,'s');}
+  const row={
+    name:nm, category_id:document.getElementById('iCt').value,
+    unit:document.getElementById('iUn').value,
+    price:parseFloat(document.getElementById('iPr').value)||0,
+    stock:parseInt(document.getElementById('iSt').value)||0,
+    stock_min:parseInt(document.getElementById('iMn').value)||0,
+    stock_max:parseInt(document.getElementById('iMx').value)||100,
+    stock_ideal:parseInt(document.getElementById('iId').value)||50,
+    location:document.getElementById('iLc').value,
+    supplier:document.getElementById('iSp').value,
+    code:document.getElementById('iBc').value,
+    notes:document.getElementById('iNo').value,
+    active:true
+  };
+  if(id){
+    const {error}=await db.from('items').update(row).eq('id',id);
+    if(error){toast('Erro ao salvar: '+error.message,'e');return}
+    addLog('UPDATE','item',id,`Editou item: ${nm}`);toast(`"${nm}" atualizado`,'s');
+  } else {
+    const {data,error}=await db.from('items').insert(row).select().single();
+    if(error){toast('Erro ao salvar: '+error.message,'e');return}
+    addLog('CREATE','item',null,`Cadastrou item: ${nm} na categoria ${getCat(row.category_id).name}`);toast(`"${nm}" cadastrado`,'s');
+  }
+  await loadData();
   recalcAlerts();closeM('mItem');renderInventory();renderDash();
 }
 
@@ -1120,7 +1129,7 @@ function openMovModal(iid,type='entrada'){
   document.getElementById('mNF').value='';document.getElementById('mR').value='';
   openM('mMov');
 }
-function doMov(){
+async function doMov(){
   const iid=document.getElementById('mMovId').value,type=document.getElementById('mT').value;
   const qty=parseInt(document.getElementById('mQ').value),price=parseFloat(document.getElementById('mP').value)||0;
   const reason=document.getElementById('mR').value,nf=document.getElementById('mNF').value;
@@ -1128,12 +1137,22 @@ function doMov(){
   const idx=S.items.findIndex(x=>x.id===iid);
   const before=S.items[idx].stock;
   let after=type==='entrada'?before+qty:type==='saida'||type==='perda'?Math.max(0,before-qty):qty;
-  S.items[idx].stock=after;S.items[idx].upd=new Date().toISOString();
   const i=S.items[idx];
   const cat=getCat(i.cat);
-  S.movs.unshift({id:gid(),iid,nm:i.name,cat:cat.name,catIcon:cat.icon,user:S.user.full_name,type,qty,before,after,price,total:qty*price,reason,nf,ts:new Date().toISOString()});
+  // Atualiza estoque no Supabase
+  const {error:eUpd}=await db.from('items').update({stock:after}).eq('id',iid);
+  if(eUpd){toast('Erro ao atualizar estoque','e');return}
+  // Registra movimentação
+  await db.from('movements').insert({
+    item_id:iid, item_name:i.name, category_name:cat.name, category_icon:cat.icon,
+    user_name:S.user.full_name, type, quantity:qty,
+    stock_before:before, stock_after:after,
+    unit_price:price, total_value:qty*price,
+    reason, reference:nf
+  });
   const tl={entrada:'📥 Entrada',saida:'📤 Saída',ajuste:'⚖ Ajuste',perda:'✕ Perda'};
   addLog(type,'mov',iid,`${tl[type]} de ${qty} ${i.unit} em "${i.name}" [${cat.name}] — ${before}→${after} (${R(qty*price)})`);
+  await loadData();
   recalcAlerts();closeM('mMov');
   toast(`${tl[type]}: ${qty} ${i.unit} de "${i.name}"`,'s');
   renderInventory();renderDash();
@@ -1439,16 +1458,31 @@ function openUserModal(id=null){
   else{['uNm','uEm','uDp','uPw','uPw2'].forEach(x=>document.getElementById(x).value='');document.getElementById('uRl').value='viewer';}
   openM('mUser');
 }
-function saveUser(){
+async function saveUser(){
   const nm=document.getElementById('uNm').value.trim(),em=document.getElementById('uEm').value.trim();
   const pw=document.getElementById('uPw').value,pw2=document.getElementById('uPw2').value;
   const id=document.getElementById('euId').value;
   if(!nm||!em){toast('Preencha nome e e-mail','e');return}
   if(!id&&(!pw||pw.length<6)){toast('Senha: mínimo 6 caracteres','e');return}
   if(pw&&pw!==pw2){toast('Senhas não coincidem','e');return}
-  const d={full_name:nm,email:em,role:document.getElementById('uRl').value,department:document.getElementById('uDp').value};
-  if(id){const idx=S.users.findIndex(x=>x.id===id);S.users[idx]={...S.users[idx],...d};if(pw){const di=UDB.findIndex(x=>x.id===id);if(di>=0)UDB[di].password=pw;}toast('Usuário atualizado','s');addLog('UPDATE','user',id,`Editou usuário: ${nm}`);}
-  else{const uid=gid();S.users.push({id:uid,...d});UDB.push({id:uid,...d,password:pw});toast('Usuário criado','s');addLog('CREATE','user',null,`Criou usuário: ${nm} (${d.role})`);}
+  const prof={full_name:nm,email:em,role:document.getElementById('uRl').value,department:document.getElementById('uDp').value};
+  if(id){
+    await db.from('users').update(prof).eq('id',id);
+    toast('Usuário atualizado','s');addLog('UPDATE','user',id,`Editou usuário: ${nm}`);
+  } else {
+    // Cria usuário no Auth do Supabase
+    const {data:authData,error:authErr}=await db.auth.admin?.createUser({email:em,password:pw,email_confirm:true}).catch(()=>({data:null,error:true}));
+    // Fallback: apenas insere na tabela users (auth via signUp)
+    if(!authData?.user){
+      const {data:su}=await db.auth.signUp({email:em,password:pw});
+      if(su?.user) prof.id=su.user.id;
+    } else {
+      prof.id=authData.user.id;
+    }
+    await db.from('users').upsert(prof);
+    toast('Usuário criado','s');addLog('CREATE','user',null,`Criou usuário: ${nm} (${prof.role})`);
+  }
+  await loadData();
   closeM('mUser');renderUsers();
 }
 
@@ -1461,13 +1495,21 @@ function openCatModal(id=null){
   else{['cNm','cDs'].forEach(x=>document.getElementById(x).value='');document.getElementById('cCl').value='#C8102E';document.getElementById('cIc').value='📦';}
   openM('mCat');
 }
-function saveCat(){
+async function saveCat(){
   const nm=document.getElementById('cNm').value.trim();if(!nm){toast('Informe o nome','e');return}
   const id=document.getElementById('ecId').value;
-  const d={name:nm,desc:document.getElementById('cDs').value,color:document.getElementById('cCl').value,icon:document.getElementById('cIc').value||'📦'};
-  if(id){const idx=S.cats.findIndex(c=>c.id===id);S.cats[idx]={...S.cats[idx],...d};toast('Categoria atualizada','s');}
-  else{S.cats.push({id:gid(),...d});toast('Categoria criada!','s');}
+  const row={name:nm,description:document.getElementById('cDs').value,color:document.getElementById('cCl').value,icon:document.getElementById('cIc').value||'📦'};
+  if(id){
+    const {error}=await db.from('categories').update(row).eq('id',id);
+    if(error){toast('Erro: '+error.message,'e');return}
+    toast('Categoria atualizada','s');
+  } else {
+    const {error}=await db.from('categories').insert(row);
+    if(error){toast('Erro: '+error.message,'e');return}
+    toast('Categoria criada!','s');
+  }
   addLog('SAVE','cat',id,`${id?'Editou':'Criou'} categoria: ${nm}`);
+  await loadData();
   closeM('mCat');renderCatsPage();renderInventory();
 }
 
@@ -1480,10 +1522,23 @@ function confirmDel(id,type){
   document.getElementById('confirmExec').onclick=()=>doDel(id,type);
   openM('mConfirm');
 }
-function doDel(id,type){
-  if(type==='item'){const nm=S.items.find(i=>i.id===id)?.name;S.items=S.items.filter(i=>i.id!==id);addLog('DELETE','item',id,`Excluiu item: ${nm}`);toast('Item excluído','w');recalcAlerts();renderInventory();renderDash();}
-  else if(type==='cat'){const nm=S.cats.find(c=>c.id===id)?.name;S.cats=S.cats.filter(c=>c.id!==id);addLog('DELETE','cat',id,`Excluiu categoria: ${nm}`);toast('Categoria excluída','w');renderCatsPage();renderInventory();}
-  else if(type==='user'){const nm=S.users.find(u=>u.id===id)?.full_name;S.users=S.users.filter(u=>u.id!==id);addLog('DELETE','user',id,`Removeu usuário: ${nm}`);toast('Usuário removido','w');renderUsers();}
+async function doDel(id,type){
+  if(type==='item'){
+    const nm=S.items.find(i=>i.id===id)?.name;
+    await db.from('items').update({active:false}).eq('id',id);
+    addLog('DELETE','item',id,`Excluiu item: ${nm}`);toast('Item excluído','w');
+    await loadData();recalcAlerts();renderInventory();renderDash();
+  } else if(type==='cat'){
+    const nm=S.cats.find(c=>c.id===id)?.name;
+    await db.from('categories').delete().eq('id',id);
+    addLog('DELETE','cat',id,`Excluiu categoria: ${nm}`);toast('Categoria excluída','w');
+    await loadData();renderCatsPage();renderInventory();
+  } else if(type==='user'){
+    const nm=S.users.find(u=>u.id===id)?.full_name;
+    await db.from('users').delete().eq('id',id);
+    addLog('DELETE','user',id,`Removeu usuário: ${nm}`);toast('Usuário removido','w');
+    await loadData();renderUsers();
+  }
   closeM('mConfirm');
 }
 
