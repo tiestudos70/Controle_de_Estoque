@@ -319,7 +319,28 @@ canvas{max-height:210px!important}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 @media(max-width:1024px){.charts-grid{grid-template-columns:1fr}.fg-row{grid-template-columns:1fr}.fg-row3{grid-template-columns:1fr 1fr}}
-@media(max-width:768px){.sidebar{display:none}.stats-row{grid-template-columns:1fr 1fr}.login-panel{display:none}.cat-hdr-stats{display:none}.totals-bar{flex-direction:column}.tb-item{border-right:none;border-bottom:var(--brd)}}
+@media(max-width:768px){
+  .sidebar{position:fixed;left:-260px;top:0;z-index:800;height:100vh;transition:left .28s cubic-bezier(.4,0,.2,1);box-shadow:none}
+  .sidebar.mob-open{left:0;box-shadow:4px 0 30px rgba(0,0,0,.25)}
+  .mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:799;backdrop-filter:blur(2px)}
+  .mob-overlay.on{display:block}
+  .mob-menu-btn{display:flex!important}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .login-panel{display:none}
+  .cat-hdr-stats{display:none}
+  .totals-bar{flex-direction:column}
+  .tb-item{border-right:none;border-bottom:var(--brd)}
+  .row-acts{opacity:1!important}
+  .search-box{width:160px}
+  .tb-right .search-box{display:none}
+}
+/* Row actions always visible on touch devices */
+@media(hover:none){.row-acts{opacity:1!important}}
+/* Mobile menu button */
+.mob-menu-btn{display:none;background:none;border:1.5px solid var(--gray2);border-radius:var(--r2);width:34px;height:34px;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--gray7);transition:all .15s;margin-right:4px}
+.mob-menu-btn:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+/* Keyboard shortcut hint */
+.kbd-hint{font-size:9px;background:var(--gray2);color:var(--gray5);border-radius:3px;padding:1px 4px;font-weight:700;letter-spacing:.3px}
 
 /* PARTICULAS LOGIN */
 .lp-particles{position:absolute;inset:0;overflow:hidden;z-index:0}
@@ -421,12 +442,15 @@ tbody tr:hover{transform:translateX(3px)}
   <div class="crit-banner-inner">
     <div class="crit-banner-scroll" id="critScroll"></div>
   </div>
-  <button class="crit-banner-close" onclick="closeBanner()">x</button>
+  <button class="crit-banner-close" onclick="closeBanner()" title="Fechar">✕</button>
 </div>
 
 <!-- POPUP ALERTAS FLUTUANTES -->
 <div id="alertPopup"></div>
 
+
+<!-- OVERLAY MOBILE -->
+<div class="mob-overlay" id="mobOverlay" onclick="closeMobMenu()"></div>
 
 <!-- LOGIN -->
 <div id="loginPage">
@@ -459,7 +483,7 @@ tbody tr:hover{transform:translateX(3px)}
         <label>Senha</label>
         <div class="pw-wrap">
           <input id="lp" type="password" placeholder="..." autocomplete="current-password">
-          <button class="pw-toggle" type="button" onclick="togglePw('lp',this)" tabindex="-1">o</button>
+          <button class="pw-toggle" type="button" onclick="togglePw('lp',this)" tabindex="-1" title="Mostrar/ocultar senha">👁</button>
         </div>
       </div>
       <button class="lf-btn" id="loginBtn" onclick="doLogin()">Entrar no Sistema</button>
@@ -484,24 +508,32 @@ tbody tr:hover{transform:translateX(3px)}
     <div class="ni" onclick="go('reports',this)"><span class="ni-icon">^</span>Relatorios</div>
     <div class="ni" onclick="go('logs',this)"><span class="ni-icon">:</span>Auditoria</div>
     <div class="sb-sec" id="admSec" style="display:none">Administracao</div>
-    <div class="ni" id="niUsers" onclick="go('users',this)" style="display:none"><span class="ni-icon">o</span>Usuarios</div>
+    <div class="ni" id="niUsers" onclick="go('users',this)" style="display:none"><span class="ni-icon">👤</span>Usuarios</div>
     <div class="sb-foot">
+      <div style="padding:8px 8px 4px;font-size:9px;color:rgba(255,255,255,.2);letter-spacing:.3px;line-height:1.6">
+        <div style="font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px">Atalhos</div>
+        <span style="background:rgba(255,255,255,.12);border-radius:3px;padding:1px 4px;font-weight:700">D</span> Dashboard &nbsp;
+        <span style="background:rgba(255,255,255,.12);border-radius:3px;padding:1px 4px;font-weight:700">I</span> Inventario<br>
+        <span style="background:rgba(255,255,255,.12);border-radius:3px;padding:1px 4px;font-weight:700">M</span> Movimentos &nbsp;
+        <span style="background:rgba(255,255,255,.12);border-radius:3px;padding:1px 4px;font-weight:700">N</span> Novo Item
+      </div>
       <div class="sb-user">
         <div class="sb-av" id="sbAv">A</div>
         <div><div class="sb-un" id="sbNm">-</div><div class="sb-ur" id="sbRl">-</div></div>
-        <button class="sb-logout" onclick="doLogout()" title="Sair">-&gt;</button>
+        <button class="sb-logout" onclick="doLogout()" title="Sair do sistema">⇥</button>
       </div>
     </div>
   </aside>
 
   <main class="main">
     <header class="topbar">
+      <button class="mob-menu-btn" onclick="toggleMobMenu()" title="Menu">☰</button>
       <div class="tb-title" id="ttl">Dashboard</div>
       <div class="tb-divider"></div>
       <div class="tb-crumb" id="tcrumb">Visao geral</div>
       <div class="tb-right">
-        <div class="search-box"><span style="color:var(--gray4);font-size:13px">?</span><input type="text" placeholder="Buscar itens..." id="gs" oninput="doSearch(this.value)"></div>
-        <div class="tb-bell" onclick="toggleAdr()" title="Alertas">&#128276;<div class="bd" id="bdot" style="display:none"></div></div>
+        <div class="search-box"><span style="color:var(--gray4);font-size:13px">🔍</span><input type="text" placeholder="Buscar itens..." id="gs" oninput="doSearch(this.value)"></div>
+        <div class="tb-bell" onclick="toggleAdr()" title="Alertas (A)">🔔<div class="bd" id="bdot" style="display:none"></div></div>
       </div>
     </header>
 
@@ -551,8 +583,10 @@ tbody tr:hover{transform:translateX(3px)}
         <div class="card-hd">
           <div class="card-title">Historico de Movimentacoes</div>
           <div class="card-acts">
+            <div class="search-box" style="width:180px"><span style="color:var(--gray4);font-size:13px">🔍</span><input type="text" placeholder="Buscar mov..." id="movSearch" oninput="doMovSearch(this.value)"></div>
             <div class="seg"><button class="seg-b on" onclick="setMF('all',this)">Todos</button><button class="seg-b" onclick="setMF('entrada',this)">Entradas</button><button class="seg-b" onclick="setMF('saida',this)">Saidas</button><button class="seg-b" onclick="setMF('ajuste',this)">Ajustes</button></div>
             <button class="btn btn-sm btn-pdf" onclick="exportMovPDF()">PDF</button>
+            <button class="btn btn-sm btn-blue" onclick="exportMovCSV()" title="Exportar CSV para Excel">📊 CSV</button>
           </div>
         </div>
         <div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Categoria</th><th>Tipo</th><th>Qtd</th><th>Antes</th><th>Depois</th><th>Valor</th><th>Motivo</th><th>Usuario</th><th>Data</th></tr></thead><tbody id="movBody"></tbody></table></div>
@@ -581,6 +615,8 @@ tbody tr:hover{transform:translateX(3px)}
           <button class="btn btn-pdf" onclick="exportPDF('all')">Relatorio Geral</button>
           <button class="btn btn-pdf" onclick="exportPDF('summary')">Resumo Categorias</button>
           <button class="btn btn-pdf" onclick="exportMovPDF()">Todas Movimentacoes</button>
+          <button class="btn btn-danger" onclick="exportCriticalPDF()" title="Relatório de itens críticos e com baixo estoque">⚠ Criticos/Baixo</button>
+          <button class="btn btn-blue" onclick="exportMovCSV()" title="Exportar movimentações como CSV">📊 CSV Movimentacoes</button>
           <select id="pdfCatSel" style="background:#fff;border:1.5px solid var(--gray2);border-radius:var(--r2);padding:6px 11px;font-size:12px;font-family:inherit;color:var(--gray7);outline:none"><option value="">Escolher categoria...</option></select>
           <button class="btn btn-pdf" onclick="exportPDFbyCat()">PDF por Categoria</button>
         </div>
@@ -697,7 +733,7 @@ tbody tr:hover{transform:translateX(3px)}
 
 <!-- ALERT DRAWER -->
 <div class="adr" id="adrPanel">
-  <div class="adr-hd"><div class="adr-title">Alertas Ativos</div><button class="btn btn-xs btn-ghost" onclick="toggleAdr()">x</button></div>
+  <div class="adr-hd"><div class="adr-title">Alertas Ativos</div><button class="btn btn-xs btn-ghost" onclick="toggleAdr()" title="Fechar (Esc)">✕ Fechar</button></div>
   <div class="adr-list" id="adrList"></div>
 </div>
 
@@ -705,7 +741,7 @@ tbody tr:hover{transform:translateX(3px)}
 <!-- Item -->
 <div class="ov" id="mItem">
   <div class="modal">
-    <div class="m-hd"><div><div class="m-title" id="mItemT">Novo Item</div><div class="m-sub">Cadastre o produto no estoque</div></div><button class="m-x" onclick="closeM('mItem')">x</button></div>
+    <div class="m-hd"><div><div class="m-title" id="mItemT">Novo Item</div><div class="m-sub">Cadastre o produto no estoque</div></div><button class="m-x" onclick="closeM('mItem')" title="Fechar (Esc)">✕</button></div>
     <div class="m-body">
       <input type="hidden" id="eiId">
       <div class="fg full"><label>Nome do Item *</label><input id="iNm" placeholder="Ex: Papel Higienico 12 rolos"></div>
@@ -737,7 +773,7 @@ tbody tr:hover{transform:translateX(3px)}
 <!-- Mov -->
 <div class="ov" id="mMov">
   <div class="modal" style="max-width:500px">
-    <div class="m-hd"><div><div class="m-title" id="mMovT">Movimentar Estoque</div><div class="m-sub" id="mMovSub"></div></div><button class="m-x" onclick="closeM('mMov')">x</button></div>
+    <div class="m-hd"><div><div class="m-title" id="mMovT">Movimentar Estoque</div><div class="m-sub" id="mMovSub"></div></div><button class="m-x" onclick="closeM('mMov')" title="Fechar (Esc)">✕</button></div>
     <div class="m-body">
       <input type="hidden" id="mMovId">
       <div class="fg-row">
@@ -757,7 +793,7 @@ tbody tr:hover{transform:translateX(3px)}
 <!-- Category -->
 <div class="ov" id="mCat">
   <div class="modal modal-sm">
-    <div class="m-hd"><div><div class="m-title" id="mCatT">Nova Categoria</div><div class="m-sub">Organize os itens por tipo</div></div><button class="m-x" onclick="closeM('mCat')">x</button></div>
+    <div class="m-hd"><div><div class="m-title" id="mCatT">Nova Categoria</div><div class="m-sub">Organize os itens por tipo</div></div><button class="m-x" onclick="closeM('mCat')" title="Fechar (Esc)">✕</button></div>
     <div class="m-body">
       <input type="hidden" id="ecId">
       <div class="fg"><label>Nome *</label><input id="cNm" placeholder="Ex: Limpeza"></div>
@@ -774,7 +810,7 @@ tbody tr:hover{transform:translateX(3px)}
 <!-- User -->
 <div class="ov" id="mUser">
   <div class="modal modal-sm">
-    <div class="m-hd"><div><div class="m-title" id="mUserT">Novo Usuario</div><div class="m-sub">Criar acesso ao sistema</div></div><button class="m-x" onclick="closeM('mUser')">x</button></div>
+    <div class="m-hd"><div><div class="m-title" id="mUserT">Novo Usuario</div><div class="m-sub">Criar acesso ao sistema</div></div><button class="m-x" onclick="closeM('mUser')" title="Fechar (Esc)">✕</button></div>
     <div class="m-body">
       <input type="hidden" id="euId">
       <div class="fg-row">
@@ -787,10 +823,10 @@ tbody tr:hover{transform:translateX(3px)}
       </div>
       <div class="fg-row">
         <div class="fg"><label>Senha *</label>
-          <div class="pw-wrap"><input type="password" id="uPw" placeholder="Min. 6 caracteres"><button class="pw-toggle" type="button" onclick="togglePw('uPw',this)" tabindex="-1">o</button></div>
+          <div class="pw-wrap"><input type="password" id="uPw" placeholder="Min. 6 caracteres"><button class="pw-toggle" type="button" onclick="togglePw('uPw',this)" tabindex="-1" title="Mostrar/ocultar senha">👁</button></div>
         </div>
         <div class="fg"><label>Confirmar Senha *</label>
-          <div class="pw-wrap"><input type="password" id="uPw2" placeholder="Repita"><button class="pw-toggle" type="button" onclick="togglePw('uPw2',this)" tabindex="-1">o</button></div>
+          <div class="pw-wrap"><input type="password" id="uPw2" placeholder="Repita"><button class="pw-toggle" type="button" onclick="togglePw('uPw2',this)" tabindex="-1" title="Mostrar/ocultar senha">👁</button></div>
         </div>
       </div>
     </div>
@@ -801,7 +837,7 @@ tbody tr:hover{transform:translateX(3px)}
 <!-- Confirm -->
 <div class="ov" id="mConfirm">
   <div class="modal modal-sm">
-    <div class="m-hd"><div><div class="m-title">Confirmar Exclusao</div></div><button class="m-x" onclick="closeM('mConfirm')">x</button></div>
+    <div class="m-hd"><div><div class="m-title">Confirmar Exclusao</div></div><button class="m-x" onclick="closeM('mConfirm')" title="Fechar (Esc)">✕</button></div>
     <div class="m-body"><p id="confirmTxt" style="font-size:13px;color:var(--gray7)"></p><p style="font-size:11px;color:var(--gray4);margin-top:8px">Esta acao nao pode ser desfeita.</p></div>
     <div class="m-foot"><button class="btn btn-ghost" onclick="closeM('mConfirm')">Cancelar</button><button class="btn btn-danger" id="confirmExec">Excluir</button></div>
   </div>
@@ -819,7 +855,7 @@ const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 const S = {
   user: null,
   cats:[], items:[], movs:[], logs:[], users:[], alerts:[], charts:{},
-  invF:'all', movF:'all', logF:'all', q:'', collapsed:{}
+  invF:'all', movF:'all', movQ:'', logF:'all', q:'', collapsed:{}
 };
 
 // LOAD DATA
@@ -851,7 +887,7 @@ const catVal = cat => S.items.filter(i=>i.cat===cat.id&&i.active).reduce((s,i)=>
 function togglePw(fId,btn){
   const i=document.getElementById(fId); if(!i) return;
   i.type = i.type==='password'?'text':'password';
-  btn.textContent = i.type==='text'?'H':'o';
+  btn.textContent = i.type==='text'?'🙈':'👁';
 }
 function addLog(action,entity,id,detail){
   S.logs.unshift({id:gid(),action,entity,id,user:S.user?.full_name||'Sistema',detail,ts:new Date().toISOString()});
@@ -969,6 +1005,7 @@ function go(page,el){
   const m=META[page];
   document.getElementById('ttl').textContent=m[0];
   document.getElementById('tcrumb').textContent=m[1];
+  closeMobMenu(); // fecha sidebar mobile ao navegar
   if(page==='dashboard')  renderDash();
   if(page==='inventory')  renderInventory();
   if(page==='movements')  renderMovements();
@@ -985,6 +1022,42 @@ const openM  = id => document.getElementById(id).classList.add('on');
 const closeM = id => document.getElementById(id).classList.remove('on');
 document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('on')}));
 const toggleAdr = () => document.getElementById('adrPanel').classList.toggle('on');
+
+// FECHAR COM ESC
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  // Fecha drawer primeiro
+  const adr = document.getElementById('adrPanel');
+  if(adr.classList.contains('on')){ toggleAdr(); return; }
+  // Fecha modal aberto
+  const openModal = document.querySelector('.ov.on');
+  if(openModal){ openModal.classList.remove('on'); return; }
+  // Fecha menu mobile
+  closeMobMenu();
+});
+
+// ATALHOS DE TECLADO (somente fora de inputs)
+document.addEventListener('keydown', e => {
+  if(!S.user) return;
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT') return;
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(e.key==='n'&&S.user?.role!=='viewer'){ e.preventDefault(); openItemModal(); }
+  if(e.key==='m'&&S.user?.role!=='viewer'){ e.preventDefault(); go('movements',document.querySelector('.ni[onclick*="movements"]')); }
+  if(e.key==='d'){ e.preventDefault(); go('dashboard',document.querySelector('.ni[onclick*="dashboard"]')); }
+  if(e.key==='i'){ e.preventDefault(); go('inventory',document.querySelector('.ni[onclick*="inventory"]')); }
+  if(e.key==='r'){ e.preventDefault(); go('reports',document.querySelector('.ni[onclick*="reports"]')); }
+  if(e.key==='a'){ e.preventDefault(); go('alerts',document.querySelector('.ni[onclick*="alerts"]')); }
+});
+
+// MOBILE MENU
+function toggleMobMenu(){
+  document.querySelector('.sidebar').classList.toggle('mob-open');
+  document.getElementById('mobOverlay').classList.toggle('on');
+}
+function closeMobMenu(){
+  document.querySelector('.sidebar').classList.remove('mob-open');
+  document.getElementById('mobOverlay').classList.remove('on');
+}
 
 // DASHBOARD
 function renderDash(){
@@ -1079,7 +1152,7 @@ function renderInventory(){
               <button class="btn btn-xs btn-green" title="Entrada" onclick="openMovModal('${i.id}','entrada')">+</button>
               <button class="btn btn-xs btn-amber" title="Saida" onclick="openMovModal('${i.id}','saida')">-</button>
               <button class="btn btn-xs btn-blue" title="Editar" onclick="openItemModal('${i.id}')">E</button>
-              <button class="btn btn-xs btn-danger" title="Excluir" onclick="confirmDel('${i.id}','item')">x</button>
+              <button class="btn btn-xs btn-danger" title="Excluir" onclick="confirmDel('${i.id}','item')">✕</button>
             `:''}
             </div></td>
           </tr>`;}).join('')}</tbody>
@@ -1179,6 +1252,22 @@ async function doMov(){
   const nf=document.getElementById('mNF').value;
   if(!qty||qty<=0){toast('Informe quantidade valida','e');return}
   const i=S.items.find(x=>x.id===iid);
+
+  // Validação de estoque negativo
+  if((type==='saida'||type==='perda')&&qty>i.stock){
+    toast(`Estoque insuficiente! Disponivel: ${i.stock} ${i.unit}`,'e');
+    return;
+  }
+  // Confirmação para saídas relevantes (>20% do estoque ou abaixo do mínimo)
+  if((type==='saida'||type==='perda')&&i.stock>0){
+    const estoqueApos=i.stock-qty;
+    const pct=Math.round((qty/i.stock)*100);
+    if(pct>=20||estoqueApos<=i.min){
+      const msg=`Retirar ${qty} ${i.unit} de "${i.name}".\nEstoque: ${i.stock} → ${estoqueApos} ${i.unit}${estoqueApos<=i.min?' ⚠ Ficara abaixo do minimo!':''}\nConfirmar?`;
+      if(!confirm(msg)) return;
+    }
+  }
+
   const {error}=await db.from('stock_movements').insert({
     item_id:iid,user_id:S.user.id,movement_type:type,
     quantity:qty,unit_price:price,reason,invoice_number:nf
@@ -1198,6 +1287,12 @@ async function quickMov(){
   const reason=document.getElementById('mvRsn').value;
   if(!iid||!qty||qty<=0){toast('Selecione item e informe quantidade','e');return}
   const i=S.items.find(x=>x.id===iid);
+
+  // Validação de estoque negativo
+  if((type==='saida'||type==='perda')&&qty>i.stock){
+    toast(`Estoque insuficiente! Disponivel: ${i.stock} ${i.unit}`,'e');
+    return;
+  }
   const {error}=await db.from('stock_movements').insert({
     item_id:iid,user_id:S.user.id,movement_type:type,
     quantity:qty,unit_price:price,reason
@@ -1214,6 +1309,7 @@ function renderMovements(){
   sel.innerHTML='<option value="">Selecione item...</option>'+S.items.filter(i=>i.active).map(i=>`<option value="${i.id}">${i.name}</option>`).join('');
   let movs=[...S.movs];
   if(S.movF!=='all') movs=movs.filter(m=>m.type===S.movF);
+  if(S.movQ){const q=S.movQ.toLowerCase();movs=movs.filter(m=>m.nm.toLowerCase().includes(q)||m.cat.toLowerCase().includes(q)||m.user.toLowerCase().includes(q)||(m.reason&&m.reason.toLowerCase().includes(q)))}
   const body=document.getElementById('movBody');
   if(!movs.length){body.innerHTML=`<tr><td colspan="10"><div class="empty"><div class="empty-icon">-</div><p>Sem movimentacoes registradas</p></div></td></tr>`;return}
   const tc={entrada:'var(--green)',saida:'var(--red)',ajuste:'var(--amber)',perda:'var(--purple)'};
@@ -1232,6 +1328,7 @@ function renderMovements(){
   </tr>`).join('');
 }
 function setMF(f,el){S.movF=f;document.querySelectorAll('#page-movements .seg-b').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderMovements()}
+function doMovSearch(q){S.movQ=q;renderMovements()}
 
 // CATEGORIES
 function renderCatsPage(){
@@ -1253,7 +1350,7 @@ function renderCatsPage(){
           ${crit?`<div><div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--red)">${crit}</div><div style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--red);font-weight:700">Critico</div></div>`:''}
           ${low?`<div><div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--amber)">${low}</div><div style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--amber);font-weight:700">Baixo</div></div>`:''}
         </div>
-        ${canEdit?`<div style="display:flex;gap:7px"><button class="btn btn-xs btn-out" onclick="openCatModal('${cat.id}')">Editar</button><button class="btn btn-xs btn-pdf" onclick="exportPDF('cat','${cat.id}')">PDF</button><button class="btn btn-xs btn-danger" onclick="confirmDel('${cat.id}','cat')">x</button></div>`:''}
+        ${canEdit?`<div style="display:flex;gap:7px"><button class="btn btn-xs btn-out" onclick="openCatModal('${cat.id}')">Editar</button><button class="btn btn-xs btn-pdf" onclick="exportPDF('cat','${cat.id}')">PDF</button><button class="btn btn-xs btn-danger" onclick="confirmDel('${cat.id}','cat')">✕</button></div>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1277,13 +1374,13 @@ async function saveCat(){
 // ALERTS
 function renderAdrPanel(){
   const el=document.getElementById('adrList');
-  if(!S.alerts.length){el.innerHTML='<div class="empty"><div class="empty-icon">ok</div><p>Sem alertas ativos!</p></div>';return}
-  el.innerHTML=S.alerts.map(a=>`<div class="adr-item ${a.type}"><div class="adr-icon">${a.type==='critico'?'!':a.type==='baixo'?'?':'+'}</div><div><div class="adr-msg">${a.msg}</div><div class="adr-time">${fmtDt(a.ts)}</div></div></div>`).join('');
+  if(!S.alerts.length){el.innerHTML='<div class="empty"><div class="empty-icon">✅</div><p>Sem alertas ativos!</p></div>';return}
+  el.innerHTML=S.alerts.map(a=>`<div class="adr-item ${a.type}"><div class="adr-icon">${a.type==='critico'?'🔴':a.type==='baixo'?'🟡':'🟣'}</div><div><div class="adr-msg">${a.msg}</div><div class="adr-time">${fmtDt(a.ts)}</div></div></div>`).join('');
 }
 function renderAlertsPage(){
   const el=document.getElementById('alertsFull');
   const canEdit=S.user?.role!=='viewer';
-  if(!S.alerts.length){el.innerHTML='<div class="empty"><div class="empty-icon">ok</div><p>Todos os itens com estoque adequado!</p></div>';return}
+  if(!S.alerts.length){el.innerHTML='<div class="empty"><div class="empty-icon">✅</div><p>Todos os itens com estoque adequado!</p></div>';return}
   el.innerHTML=S.alerts.map(a=>{
     const i=S.items.find(x=>x.id===a.iid); const cat=i?getCat(i.cat):null;
     return`<div class="log-row"><div class="ld-dot" style="background:${a.type==='critico'?'var(--red)':a.type==='baixo'?'var(--amber)':'var(--purple)'}"></div><div class="ld-txt"><div class="la">${a.type==='critico'?'CRITICO':a.type==='baixo'?'BAIXO':'EXCESSO'} - ${a.nm}</div><div class="lt">${i&&cat?`${cat.name} - Estoque: ${i.stock} ${i.unit} - Min: ${i.min} - Valor: ${R(i.stock*i.price)}`:''}</div></div>${i&&canEdit?`<button class="btn btn-xs btn-green" onclick="openMovModal('${i.id}','entrada')">Repor</button>`:''}</div>`;
@@ -1514,7 +1611,7 @@ function renderUsers(){
       <span class="role-tag rt-${u.role}" style="margin-left:12px">${u.role==='admin'?'Administrador':u.role==='manager'?'Gerente':'Visualizador'}</span>
       <div style="margin-left:auto;display:flex;gap:5px">
         <button class="btn btn-xs btn-out" onclick="openUserModal('${u.id}')">Editar</button>
-        ${u.id!==S.user?.id?`<button class="btn btn-xs btn-danger" onclick="confirmDel('${u.id}','user')">x</button>`:`<span style="font-size:10px;color:var(--gray4);padding:0 8px">voce</span>`}
+        ${u.id!==S.user?.id?`<button class="btn btn-xs btn-danger" onclick="confirmDel('${u.id}','user')">✕</button>`:`<span style="font-size:10px;color:var(--gray4);padding:0 8px">voce</span>`}
       </div>
     </div>`).join('');
 }
@@ -1671,7 +1768,7 @@ function showAlertPopups() {
       const lb = { critico: 'Estoque Zerado', baixo: 'Estoque Baixo', alto: 'Excesso de Estoque' };
       const el = document.createElement('div');
       el.className = 'alert-popup-item ' + a.type;
-      el.innerHTML = '<div class="ap-icon">!</div><div class="ap-txt"><div class="ap-title">'+a.nm+'</div><div class="ap-sub">'+lb[a.type]+'</div></div><button class="ap-x" onclick="dismissPopup(this.parentElement)">x</button>';
+      el.innerHTML = '<div class="ap-icon">⚠</div><div class="ap-txt"><div class="ap-title">'+a.nm+'</div><div class="ap-sub">'+lb[a.type]+'</div></div><button class="ap-x" onclick="dismissPopup(this.parentElement)" title="Fechar">✕</button>';
       el.addEventListener('click', e => { if (e.target.classList.contains('ap-x')) return; go('alerts', document.querySelector('.ni[onclick*="alerts"]')); dismissPopup(el); });
       popup.appendChild(el);
       setTimeout(() => dismissPopup(el), 6000);
@@ -1979,6 +2076,106 @@ renderReports = function() {
   // Restaura tab ativo visualmente
   setPeriodTab(currentPeriodTab);
 };
+
+// ═══════════════════════════════════════════════
+// EXPORTAR CSV DE MOVIMENTACOES
+// ═══════════════════════════════════════════════
+function exportMovCSV(){
+  const movs=[...S.movs];
+  if(!movs.length){toast('Sem movimentacoes para exportar','w');return}
+  const headers=['Data/Hora','Item','Categoria','Tipo','Quantidade','Estoque Antes','Estoque Depois','Preco Unit.','Valor Total','Motivo','NF/Referencia','Usuario'];
+  const tipoLabel={entrada:'ENTRADA',saida:'SAIDA',ajuste:'AJUSTE',perda:'PERDA'};
+  const rows=movs.map(m=>[
+    fmtDt(m.ts),
+    '"'+m.nm.replace(/"/g,'""')+'"',
+    '"'+(m.cat||'-').replace(/"/g,'""')+'"',
+    tipoLabel[m.type]||m.type.toUpperCase(),
+    m.qty,
+    m.before!==null&&m.before!==undefined?m.before:'-',
+    m.after!==null&&m.after!==undefined?m.after:'-',
+    m.price>0?m.price.toFixed(2).replace('.',','):'-',
+    m.total>0?m.total.toFixed(2).replace('.',','):'-',
+    '"'+(m.reason||'-').replace(/"/g,'""')+'"',
+    '"'+(m.nf||'-').replace(/"/g,'""')+'"',
+    '"'+(m.user||'-').replace(/"/g,'""')+'"'
+  ]);
+  const csv=[headers.join(';'),...rows.map(r=>r.join(';'))].join('\r\n');
+  const bom='\uFEFF'; // BOM para Excel reconhecer UTF-8
+  const blob=new Blob([bom+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='UNA_Movimentacoes_'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+  toast('CSV exportado! Abra no Excel.','s');
+}
+
+// ═══════════════════════════════════════════════
+// EXPORTAR PDF DE ITENS CRITICOS E BAIXO ESTOQUE
+// ═══════════════════════════════════════════════
+function exportCriticalPDF(){
+  const criticos=S.items.filter(i=>i.active&&iSt(i)==='critico');
+  const baixos=S.items.filter(i=>i.active&&iSt(i)==='baixo');
+  const todos=[...criticos,...baixos];
+  if(!todos.length){toast('Nenhum item critico ou com baixo estoque!','i');return}
+  if(!window.jspdf){toast('Biblioteca PDF ainda carregando','w');return}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=doc.internal.pageSize.getWidth();
+  const dt=new Date().toLocaleString('pt-BR');
+
+  doc.setFillColor(200,16,46);
+  doc.rect(0,0,W,18,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16);doc.setFont('helvetica','bold');
+  doc.text('UNA - Controle de Estoque',14,11);
+  doc.setFontSize(10);doc.setFont('helvetica','normal');
+  doc.text('Relatorio de Itens Criticos e Baixo Estoque',W-14,11,{align:'right'});
+
+  doc.setTextColor(50,50,50);doc.setFontSize(9);
+  doc.text('Gerado: '+dt+' | Usuario: '+(S.user?.full_name||'-'),14,25);
+
+  // Caixa resumo
+  doc.setFillColor(248,248,248);
+  doc.rect(14,28,W-28,16,'F');
+  doc.setDrawColor(228,228,231);doc.rect(14,28,W-28,16,'S');
+  doc.setFontSize(8);doc.setFont('helvetica','normal');
+  doc.setTextColor(200,16,46);doc.setFont('helvetica','bold');
+  doc.text('CRITICOS (Zerados): '+criticos.length,18,35);
+  doc.setTextColor(180,83,9);
+  doc.text('BAIXO ESTOQUE: '+baixos.length,90,35);
+  doc.setTextColor(50,50,50);doc.setFont('helvetica','normal');
+  doc.text('Total de itens que precisam de atencao: '+todos.length,18,41);
+
+  doc.autoTable({
+    startY:47,
+    head:[['Status','Item','Categoria','Estoque Atual','Minimo','Ideal','Maximo','Valor Unit.','Valor em Estoque','Localizacao','Fornecedor']],
+    body:todos.map(i=>{
+      const cat=getCat(i.cat);
+      const st=iSt(i);
+      return[
+        st==='critico'?'CRITICO':'BAIXO',
+        i.name,cat.name,
+        i.stock+' '+i.unit,i.min,i.ideal,i.max,
+        'R$ '+Rd(i.price),
+        'R$ '+Rd(i.stock*i.price),
+        i.loc||'-',i.sup||'-'
+      ];
+    }),
+    styles:{fontSize:7.5,cellPadding:2},
+    headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold',fontSize:8},
+    alternateRowStyles:{fillColor:[248,248,248]},
+    columnStyles:{0:{cellWidth:18},1:{cellWidth:48},2:{cellWidth:30},3:{cellWidth:22},4:{cellWidth:16},5:{cellWidth:16},6:{cellWidth:16},7:{cellWidth:22},8:{cellWidth:26},9:{cellWidth:24},10:{cellWidth:28}},
+    didParseCell:function(data){
+      if(data.section==='body'&&data.column.index===0){
+        if(data.cell.raw==='CRITICO'){data.cell.styles.textColor=[200,16,46];data.cell.styles.fontStyle='bold';}
+        else{data.cell.styles.textColor=[180,83,9];data.cell.styles.fontStyle='bold';}
+      }
+    }
+  });
+
+  doc.save('UNA_Criticos_'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.pdf');
+  toast('PDF de criticos gerado!','s');
+}
 </script>
 </body>
 </html>
