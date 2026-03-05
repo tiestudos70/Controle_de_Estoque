@@ -1165,22 +1165,22 @@ function exportPDF(mode='all',catId=null){
   if(mode==='all'){
     header('Relatório Geral','Resumo por Categoria');
     const totalGeral=S.items.filter(i=>i.active).reduce((s,i)=>s+i.stock*i.price,0);
-    doc.autoTable({startY:38,head:[['Categoria','Qtd','Valor Estoque (R$)','Críticos','Baixo','Normal','Excesso']],body:[...S.cats.map(cat=>{const its=S.items.filter(i=>i.cat===cat.id&&i.active);return[cat.icon+' '+cat.name,its.length,Rd(catVal(cat)),its.filter(i=>iSt(i)==='critico').length,its.filter(i=>iSt(i)==='baixo').length,its.filter(i=>iSt(i)==='normal').length,its.filter(i=>iSt(i)==='alto').length]}),['TOTAL GERAL',S.items.filter(i=>i.active).length,Rd(totalGeral),'','','','']],styles:{fontSize:9},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]}});
+    doc.autoTable({startY:38,head:[['Categoria','Qtd','Valor Estoque (R$)','Críticos','Baixo','Normal','Excesso']],body:[...S.cats.map(cat=>{const its=S.items.filter(i=>i.cat===cat.id&&i.active);return[cat.name,its.length,Rd(catVal(cat)),its.filter(i=>iSt(i)==='critico').length,its.filter(i=>iSt(i)==='baixo').length,its.filter(i=>iSt(i)==='normal').length,its.filter(i=>iSt(i)==='alto').length]}),['TOTAL GERAL',S.items.filter(i=>i.active).length,Rd(totalGeral),'','','','']],styles:{fontSize:9},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]}});
     for(const cat of S.cats){
       const its=S.items.filter(i=>i.cat===cat.id&&i.active); if(!its.length) continue;
-      doc.addPage(); header(`Categoria: ${cat.name}`,`${cat.icon} ${cat.name} — ${its.length} item(s) · R$ ${Rd(catVal(cat))}`);
+      doc.addPage(); header(`Categoria: ${cat.name}`,`${cat.name} — ${its.length} item(s) · R$ ${Rd(catVal(cat))}`);
       doc.autoTable({startY:38,head:[['Item','Un.','Qtd','Preço (R$)','Total (R$)','Min','Max','Ideal','Local','Fornecedor','Status']],body:its.map(i=>[i.name,i.unit,i.stock,Rd(i.price),Rd(i.stock*i.price),i.min,i.max,i.ideal,i.loc||'—',i.sup||'—',{critico:'CRÍTICO',baixo:'BAIXO',normal:'NORMAL',alto:'EXCESSO'}[iSt(i)]]),styles:{fontSize:8},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]},didParseCell:d=>{if(d.section==='body'&&d.column.index===10){const v=d.cell.raw;d.cell.styles.textColor=v==='CRÍTICO'?[200,16,46]:v==='BAIXO'?[180,83,9]:v==='NORMAL'?[21,128,61]:[124,58,237];d.cell.styles.fontStyle='bold'}}});
     }
     doc.save(`UNA_Relatorio_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.pdf`);
   } else if(mode==='summary'){
     header('Resumo por Categoria','Visão Financeira');
     const tg=S.cats.reduce((s,c)=>s+catVal(c),0);
-    doc.autoTable({startY:38,head:[['Categoria','Itens','Valor Estoque','Críticos','Baixo','Normal','Excesso','% Total']],body:S.cats.map(cat=>{const val=catVal(cat);const its=S.items.filter(i=>i.cat===cat.id&&i.active);return[cat.icon+' '+cat.name,its.length,'R$ '+Rd(val),its.filter(i=>iSt(i)==='critico').length,its.filter(i=>iSt(i)==='baixo').length,its.filter(i=>iSt(i)==='normal').length,its.filter(i=>iSt(i)==='alto').length,tg>0?((val/tg)*100).toFixed(1)+'%':'—']}),styles:{fontSize:9},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]}});
+    doc.autoTable({startY:38,head:[['Categoria','Itens','Valor Estoque','Críticos','Baixo','Normal','Excesso','% Total']],body:S.cats.map(cat=>{const val=catVal(cat);const its=S.items.filter(i=>i.cat===cat.id&&i.active);return[cat.name,its.length,'R$ '+Rd(val),its.filter(i=>iSt(i)==='critico').length,its.filter(i=>iSt(i)==='baixo').length,its.filter(i=>iSt(i)==='normal').length,its.filter(i=>iSt(i)==='alto').length,tg>0?((val/tg)*100).toFixed(1)+'%':'—']}),styles:{fontSize:9},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]}});
     doc.save(`UNA_Resumo_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.pdf`);
   } else if(mode==='cat'&&catId){
     const cat=S.cats.find(c=>c.id===catId); if(!cat) return;
     const its=S.items.filter(i=>i.cat===catId&&i.active);
-    header(`Categoria: ${cat.name}`,`${cat.icon} ${cat.name} — ${its.length} item(s)`);
+    header(`Categoria: ${cat.name}`,`${cat.name} — ${its.length} item(s)`);
     doc.autoTable({startY:38,head:[['Item','Un.','Qtd','Preço (R$)','Total (R$)','Min','Max','Ideal','Local','Fornecedor','Status']],body:its.map(i=>[i.name,i.unit,i.stock,Rd(i.price),Rd(i.stock*i.price),i.min,i.max,i.ideal,i.loc||'—',i.sup||'—',{critico:'⛔ CRÍTICO',baixo:'⚠ BAIXO',normal:'✓ NORMAL',alto:'↑ EXCESSO'}[iSt(i)]]),styles:{fontSize:9},headStyles:{fillColor:[200,16,46],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,248,248]}});
     doc.save(`UNA_${cat.name.replace(/\s/g,'_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.pdf`);
   }
