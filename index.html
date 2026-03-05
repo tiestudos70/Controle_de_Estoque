@@ -587,6 +587,59 @@ tbody tr:hover{transform:translateX(3px)}
           <button class="btn btn-pdf" onclick="exportPDFbyCat()">📁 PDF por Categoria</button>
         </div>
       </div>
+
+      <!-- EXPORTAÇÃO POR PERÍODO -->
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-hd">
+          <div>
+            <div class="card-title">📅 Exportar por Período</div>
+            <div class="card-sub">Relatório de movimentações filtrado por dia, semana, mês ou ano</div>
+          </div>
+        </div>
+        <div style="padding:16px 18px">
+          <!-- Tabs de período -->
+          <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
+            <button class="btn btn-sm" id="ptab-dia"   onclick="setPeriodTab('dia')"   style="background:var(--red);color:#fff;border:none">📆 Dia</button>
+            <button class="btn btn-sm btn-out" id="ptab-semana" onclick="setPeriodTab('semana')">📅 Semana</button>
+            <button class="btn btn-sm btn-out" id="ptab-mes"    onclick="setPeriodTab('mes')">🗓 Mês</button>
+            <button class="btn btn-sm btn-out" id="ptab-ano"    onclick="setPeriodTab('ano')">📊 Ano</button>
+          </div>
+
+          <!-- Controles por período -->
+          <div id="pctrl-dia" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <label style="font-size:11px;font-weight:700;color:var(--gray7)">Data:</label>
+            <input type="date" id="pval-dia" style="background:#fff;border:1.5px solid var(--gray2);border-radius:var(--r2);padding:6px 11px;font-size:12px;font-family:inherit;color:var(--black);outline:none">
+            <button class="btn btn-pdf" onclick="exportPeriodoPDF()">📄 Exportar PDF do Dia</button>
+          </div>
+          <div id="pctrl-semana" style="display:none;align-items:center;gap:10px;flex-wrap:wrap">
+            <label style="font-size:11px;font-weight:700;color:var(--gray7)">Semana de:</label>
+            <input type="date" id="pval-semana" style="background:#fff;border:1.5px solid var(--gray2);border-radius:var(--r2);padding:6px 11px;font-size:12px;font-family:inherit;color:var(--black);outline:none">
+            <span style="font-size:11px;color:var(--gray4)" id="pval-semana-label"></span>
+            <button class="btn btn-pdf" onclick="exportPeriodoPDF()">📄 Exportar PDF da Semana</button>
+          </div>
+          <div id="pctrl-mes" style="display:none;align-items:center;gap:10px;flex-wrap:wrap">
+            <label style="font-size:11px;font-weight:700;color:var(--gray7)">Mês:</label>
+            <select id="pval-mes-m" style="background:#fff;border:1.5px solid var(--gray2);border-radius:var(--r2);padding:6px 11px;font-size:12px;font-family:inherit;color:var(--black);outline:none">
+              <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+              <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+              <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+              <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+            </select>
+            <select id="pval-mes-a" style="background:#fff;border:1.5px solid var(--gray2);border-radius:var(--r2);padding:6px 11px;font-size:12px;font-family:inherit;color:var(--black);outline:none"></select>
+            <button class="btn btn-pdf" onclick="exportPeriodoPDF()">📄 Exportar PDF do Mês</button>
+          </div>
+          <div id="pctrl-ano" style="display:none;align-items:center;gap:10px;flex-wrap:wrap">
+            <label style="font-size:11px;font-weight:700;color:var(--gray7)">Ano:</label>
+            <select id="pval-ano" style="background:#fff;border:1.5px solid var(--gray2);border-radius:var(--r2);padding:6px 11px;font-size:12px;font-family:inherit;color:var(--black);outline:none"></select>
+            <button class="btn btn-pdf" onclick="exportPeriodoPDF()">📄 Exportar PDF do Ano</button>
+          </div>
+
+          <!-- Preview count -->
+          <div id="periodo-preview" style="margin-top:12px;padding:10px 14px;background:var(--gray1);border-radius:var(--r2);font-size:12px;color:var(--gray5)">
+            Selecione um período para ver o resumo antes de exportar.
+          </div>
+        </div>
+      </div>
       <div class="charts-grid">
         <div class="card" style="grid-column:1/-1"><div class="card-hd"><div class="card-title">Movimentações por Mês</div></div><div class="chart-wrap"><canvas id="cMov" style="max-height:240px!important"></canvas></div></div>
         <div class="card"><div class="card-hd"><div class="card-title">Itens por Categoria</div></div><div class="chart-wrap"><canvas id="cCI"></canvas></div></div>
@@ -973,7 +1026,7 @@ function go(page,el){
   if(page==='movements')  renderMovements();
   if(page==='categories') renderCatsPage();
   if(page==='alerts')     renderAlertsPage();
-  if(page==='reports')    renderReports();
+  if(page==='reports')    { renderReports(); _initPeriodoControls(); }
   if(page==='logs')       renderLogs();
   if(page==='users')      renderUsers();
   if(page==='goals')      renderGoals();
@@ -1325,6 +1378,216 @@ function renderReports(){
 }
 
 // ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
+// EXPORTAÇÃO POR PERÍODO
+// ═══════════════════════════════════════════════
+let _periodoAtivo = 'dia';
+
+function setPeriodTab(tab) {
+  _periodoAtivo = tab;
+  ['dia','semana','mes','ano'].forEach(t => {
+    const btn = document.getElementById('ptab-'+t);
+    const ctrl = document.getElementById('pctrl-'+t);
+    if (btn) { btn.className = t===tab ? 'btn btn-sm' : 'btn btn-sm btn-out'; if(t===tab) btn.style.cssText='background:var(--red);color:#fff;border:none'; else btn.style.cssText=''; }
+    if (ctrl) ctrl.style.display = t===tab ? 'flex' : 'none';
+  });
+  _atualizarPreviewPeriodo();
+}
+
+function _getPeriodoRange() {
+  const now = new Date();
+  if (_periodoAtivo === 'dia') {
+    const v = document.getElementById('pval-dia').value;
+    if (!v) return null;
+    const d = new Date(v + 'T00:00:00');
+    const fim = new Date(v + 'T23:59:59');
+    return { inicio: d, fim, label: d.toLocaleDateString('pt-BR', {weekday:'long',day:'2-digit',month:'long',year:'numeric'}) };
+  }
+  if (_periodoAtivo === 'semana') {
+    const v = document.getElementById('pval-semana').value;
+    if (!v) return null;
+    const ref = new Date(v + 'T00:00:00');
+    const dow = ref.getDay();
+    const seg = new Date(ref); seg.setDate(ref.getDate() - dow + (dow===0?-6:1));
+    const dom = new Date(seg); dom.setDate(seg.getDate() + 6); dom.setHours(23,59,59);
+    const lbl = document.getElementById('pval-semana-label');
+    const str = seg.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' a ' + dom.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    if(lbl) lbl.textContent = str;
+    return { inicio: seg, fim: dom, label: 'Semana de ' + str };
+  }
+  if (_periodoAtivo === 'mes') {
+    const m = parseInt(document.getElementById('pval-mes-m').value);
+    const a = parseInt(document.getElementById('pval-mes-a').value);
+    if (!m || !a) return null;
+    const inicio = new Date(a, m-1, 1);
+    const fim = new Date(a, m, 0, 23, 59, 59);
+    const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    return { inicio, fim, label: meses[m-1] + ' de ' + a };
+  }
+  if (_periodoAtivo === 'ano') {
+    const a = parseInt(document.getElementById('pval-ano').value);
+    if (!a) return null;
+    const inicio = new Date(a, 0, 1);
+    const fim = new Date(a, 11, 31, 23, 59, 59);
+    return { inicio, fim, label: 'Ano de ' + a };
+  }
+  return null;
+}
+
+function _atualizarPreviewPeriodo() {
+  const prev = document.getElementById('periodo-preview');
+  if (!prev) return;
+  const range = _getPeriodoRange();
+  if (!range) { prev.innerHTML = 'Selecione um período para ver o resumo antes de exportar.'; prev.style.background='var(--gray1)'; return; }
+  const movs = S.movs.filter(m => { const d = new Date(m.ts); return d >= range.inicio && d <= range.fim; });
+  const entradas = movs.filter(m=>m.type==='entrada');
+  const saidas   = movs.filter(m=>m.type==='saida');
+  const totalE   = entradas.reduce((s,m)=>s+m.total,0);
+  const totalS   = saidas.reduce((s,m)=>s+m.total,0);
+  if (!movs.length) {
+    prev.style.background='var(--amber-bg)';
+    prev.innerHTML = '<strong style="color:var(--amber)">⚠ Nenhuma movimentação encontrada</strong> para o período selecionado: <strong>' + range.label + '</strong>';
+    return;
+  }
+  prev.style.background='var(--blue-bg)';
+  prev.innerHTML = '<strong style="color:var(--blue)">' + range.label + '</strong> — ' +
+    '<strong>' + movs.length + '</strong> movimentações: ' +
+    '<span style="color:var(--green);font-weight:700">↑ ' + entradas.length + ' entradas (' + R(totalE) + ')</span> · ' +
+    '<span style="color:var(--red);font-weight:700">↓ ' + saidas.length + ' saídas (' + R(totalS) + ')</span>';
+}
+
+function _initPeriodoControls() {
+  // Default dia = hoje
+  const hoje = new Date().toISOString().slice(0,10);
+  const diaEl = document.getElementById('pval-dia');
+  if (diaEl) diaEl.value = hoje;
+
+  // Semana = hoje
+  const semEl = document.getElementById('pval-semana');
+  if (semEl) { semEl.value = hoje; semEl.addEventListener('change', _atualizarPreviewPeriodo); }
+  if (diaEl) diaEl.addEventListener('change', _atualizarPreviewPeriodo);
+
+  // Popular anos (últimos 5)
+  const anoAtual = new Date().getFullYear();
+  const selAno = document.getElementById('pval-ano');
+  const selMesA = document.getElementById('pval-mes-a');
+  for (let a = anoAtual; a >= anoAtual-4; a--) {
+    if (selAno) { const o=document.createElement('option'); o.value=a; o.textContent=a; selAno.appendChild(o); }
+    if (selMesA) { const o=document.createElement('option'); o.value=a; o.textContent=a; selMesA.appendChild(o); }
+  }
+
+  // Mês atual
+  const mesEl = document.getElementById('pval-mes-m');
+  if (mesEl) { mesEl.value = new Date().getMonth()+1; mesEl.addEventListener('change', _atualizarPreviewPeriodo); }
+  if (selMesA) { selMesA.addEventListener('change', _atualizarPreviewPeriodo); }
+  if (selAno) selAno.addEventListener('change', _atualizarPreviewPeriodo);
+
+  _atualizarPreviewPeriodo();
+}
+
+function exportPeriodoPDF() {
+  if (!window.jspdf) { toast('Biblioteca PDF ainda carregando','w'); return; }
+  const range = _getPeriodoRange();
+  if (!range) { toast('Selecione um período válido','w'); return; }
+
+  const movs = S.movs.filter(m => { const d = new Date(m.ts); return d >= range.inicio && d <= range.fim; });
+  if (!movs.length) { toast('Nenhuma movimentação no período selecionado','w'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const dt = new Date().toLocaleString('pt-BR');
+
+  // Cabeçalho
+  doc.setFillColor(200,16,46); doc.rect(0,0,W,18,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text('UNA — Controle de Estoque', 14, 11);
+  doc.setFontSize(10); doc.setFont('helvetica','normal');
+  doc.text('Relatório de Movimentações por Período', W-14, 11, {align:'right'});
+  doc.setTextColor(50,50,50); doc.setFontSize(9);
+  doc.text('Gerado: ' + dt + ' | Usuário: ' + (S.user?.full_name||'—'), 14, 24);
+
+  // Título do período
+  doc.setFontSize(13); doc.setFont('helvetica','bold');
+  doc.text('Período: ' + range.label, 14, 32);
+
+  // Resumo
+  const entradas = movs.filter(m=>m.type==='entrada');
+  const saidas   = movs.filter(m=>m.type==='saida');
+  const totalE   = entradas.reduce((s,m)=>s+m.total,0);
+  const totalS   = saidas.reduce((s,m)=>s+m.total,0);
+  const saldo    = totalE - totalS;
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.setFillColor(248,248,248); doc.rect(14, 36, W-28, 16, 'F');
+  doc.setDrawColor(220,220,220); doc.rect(14, 36, W-28, 16, 'S');
+  doc.setTextColor(50,50,50);
+  doc.text('Total de movimentações: ' + movs.length, 18, 42);
+  doc.setTextColor(21,128,61);  doc.text('↑ Entradas: ' + entradas.length + ' (' + R(totalE) + ')', 18, 48);
+  doc.setTextColor(200,16,46);  doc.text('↓ Saídas: ' + saidas.length + ' (' + R(totalS) + ')', 90, 48);
+  doc.setTextColor(saldo>=0?21:200, saldo>=0?128:16, saldo>=0?61:46);
+  doc.text('Saldo: ' + R(saldo), 170, 48);
+  doc.setTextColor(50,50,50);
+
+  // Tabela de movimentações
+  doc.autoTable({
+    startY: 56,
+    head: [['Data/Hora','Item','Categoria','Tipo','Qtd','Antes→Depois','Valor (R$)','Motivo','Usuário']],
+    body: movs.map(m => [
+      fmtDt(m.ts),
+      m.nm,
+      m.cat || '—',
+      m.type.toUpperCase(),
+      m.qty,
+      m.before + ' → ' + m.after,
+      m.total > 0 ? Rd(m.total) : '—',
+      m.reason || '—',
+      m.user
+    ]),
+    styles: { fontSize: 7.5 },
+    headStyles: { fillColor: [200,16,46], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [248,248,248] },
+    didParseCell: d => {
+      if (d.section==='body' && d.column.index===3) {
+        d.cell.styles.textColor = d.cell.raw==='ENTRADA' ? [21,128,61] : [200,16,46];
+        d.cell.styles.fontStyle = 'bold';
+      }
+    }
+  });
+
+  // Página 2: Resumo por categoria
+  const cats = [...new Set(movs.map(m=>m.cat).filter(Boolean))];
+  if (cats.length) {
+    doc.addPage();
+    doc.setFillColor(200,16,46); doc.rect(0,0,W,18,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text('Resumo por Categoria — ' + range.label, 14, 11);
+    doc.setTextColor(50,50,50);
+    doc.autoTable({
+      startY: 24,
+      head: [['Categoria','Entradas','Qtd Entrada','Valor Entradas (R$)','Saídas','Qtd Saída','Valor Saídas (R$)']],
+      body: cats.map(cat => {
+        const me = movs.filter(m=>m.cat===cat&&m.type==='entrada');
+        const ms = movs.filter(m=>m.cat===cat&&m.type==='saida');
+        return [
+          cat,
+          me.length, me.reduce((s,m)=>s+m.qty,0), Rd(me.reduce((s,m)=>s+m.total,0)),
+          ms.length, ms.reduce((s,m)=>s+m.qty,0), Rd(ms.reduce((s,m)=>s+m.total,0))
+        ];
+      }),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [200,16,46], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [248,248,248] }
+    });
+  }
+
+  // Nome do arquivo
+  const nomeMap = { dia: 'Dia', semana: 'Semana', mes: 'Mes', ano: 'Ano' };
+  const slug = range.label.replace(/[\s\/]/g,'_').replace(/[^\w_]/g,'');
+  doc.save('UNA_Periodo_' + nomeMap[_periodoAtivo] + '_' + slug + '.pdf');
+  toast('PDF do período gerado com sucesso!', 's');
+}
+
 // PDF EXPORT
 // ═══════════════════════════════════════════════
 function exportPDF(mode='all',catId=null){
