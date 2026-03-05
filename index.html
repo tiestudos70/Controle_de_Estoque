@@ -1469,17 +1469,11 @@ setInterval(()=>{if(S.user) recalcAlerts()},30000);
 // ═══════════════════════════════════════════════
 
 // ── Loader inicial ──
-// Garante que o loader SEMPRE some, mesmo se scripts externos falharem
-function _hideLoader(){
-  const el = document.getElementById('appLoader');
-  if(el) el.classList.add('hide');
-}
-// Tenta via window.load normalmente
-window.addEventListener('load', () => setTimeout(_hideLoader, 900));
-// Fallback 1: DOMContentLoaded + 2s (caso scripts externos travem o load)
-document.addEventListener('DOMContentLoaded', () => setTimeout(_hideLoader, 2000));
-// Fallback 2: timeout absoluto de 5s — garante que nunca fique preso
-setTimeout(_hideLoader, 5000);
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('appLoader').classList.add('hide');
+  }, 900);
+});
 
 // ── Partículas no painel de login ──
 function initParticles() {
